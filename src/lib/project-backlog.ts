@@ -4,7 +4,7 @@
  *
  * A backlog item is a folder of notes (`B-NNN-<slug>/` holding the entry note
  * that names it, numbered child notes `NNN-...`, task deliverables
- * `NNN-T-xxxx-...`, HTML files and diagram notes), or — the old shape from
+ * `NNN-T-xxxx-...`, HTML files, images and diagram notes), or — the old shape from
  * before folder-first (T-0321) — a single `B-NNN-....md` file. Either way the
  * item's status and priority come from its entry note's frontmatter, the same
  * fields `_backlog.base` renders.
@@ -14,7 +14,7 @@
  * pinned down by tests instead of by looking at the pane.
  */
 import { isDiagramKind, type DiagramKind } from "@/lib/diagram-kinds";
-import { isPreviewable } from "@/lib/docs/preview-kind";
+import { isPreviewableOrImage, previewKindForPath } from "@/lib/docs/preview-kind";
 import { splitFrontmatter } from "@/lib/docs/markdown";
 import type { DocsEntry } from "@/types";
 
@@ -210,6 +210,7 @@ export type BacklogFileKind =
   | "child"
   | "diagram"
   | "html"
+  | "image"
   | "note";
 
 /**
@@ -221,7 +222,8 @@ export type BacklogFileKind =
  *   tab uses);
  * - `NNN-T-xxxx-...` files are task deliverables (what a finished task left
  *   behind), `NNN-...` files are child notes;
- * - HTML files render as pages; anything else previewable is a plain note.
+ * - HTML files render as pages, images inline on the pan/zoom canvas;
+ *   anything else previewable is a plain note.
  */
 export function classifyBacklogFile(
   name: string,
@@ -232,6 +234,7 @@ export function classifyBacklogFile(
   if (isEntry) return "entry";
   if (isDiagramKind(frontType)) return "diagram";
   if (isHtml) return "html";
+  if (previewKindForPath(name) === "image") return "image";
   const stem = name.replace(/\.[^.]*$/, "");
   if (/^[0-9]+-T-/i.test(stem)) return "deliverable";
   if (/^[0-9]+-/.test(stem)) return "child";
@@ -240,7 +243,7 @@ export function classifyBacklogFile(
 
 /** True for a row the pane offers to read: a file the preview can render. */
 export function isListableBacklogFile(entry: DocsEntry): boolean {
-  return isPreviewable(entry);
+  return isPreviewableOrImage(entry);
 }
 
 /**

@@ -171,6 +171,13 @@ describe("classifyBacklogFile", () => {
     expect(classifyBacklogFile("links.md", false, "", false)).toBe("note");
   });
 
+  it("calls an image an image, whatever its name", () => {
+    expect(classifyBacklogFile("shot-01-base.png", false, "", false)).toBe("image");
+    expect(classifyBacklogFile("shot-02-look0.JPG", false, "", false)).toBe("image");
+    expect(classifyBacklogFile("diagram.svg", false, "", false)).toBe("image");
+    expect(classifyBacklogFile("sheet.xlsx", false, "", false)).toBe("note");
+  });
+
   it("lists the entry note first, then by name", () => {
     const rows = [
       { name: "020-b.md", isEntry: false },

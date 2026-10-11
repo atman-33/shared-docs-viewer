@@ -437,9 +437,11 @@ export function DocsView() {
         setOpenPathNotice(notice);
         return;
       }
-      if (previewKindForPath(match.path) === null) {
-        // A PDF or spreadsheet: the tab never previews these, it hands them
-        // to the OS the way the tree does.
+      const kind = previewKindForPath(match.path);
+      if (kind === null || kind === "image") {
+        // A PDF, a spreadsheet or an image: the tab never previews these, it
+        // hands them to the OS the way the tree does. (Images preview in the
+        // Projects tab's panes, not here.)
         void api.docsOpenExternal(match.path).catch((e) => setError(String(e)));
         setOpenPathNotice(notice);
         return;

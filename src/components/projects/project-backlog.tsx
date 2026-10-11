@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ArrowLeft, BookOpen, RefreshCw, Shapes } from "lucide-react";
+import { ArrowLeft, BookOpen, Image as ImageIcon, RefreshCw, Shapes } from "lucide-react";
 import { DocsPreview, type UnresolvedWikiLink } from "@/components/docs/docs-preview";
+import { ImagePreview } from "@/components/docs/image-preview";
 import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { KIND_ICON, isDiagramKind } from "@/lib/diagram-kinds";
-import { isPreviewable } from "@/lib/docs/preview-kind";
+import { isPreviewableOrImage } from "@/lib/docs/preview-kind";
 import { isWithinRoot, relativeWithin } from "@/lib/docs/tree-nav";
 import { useT } from "@/lib/i18n";
 import {
@@ -71,7 +72,7 @@ interface Props {
  * Discovery goes through the same `resolve_project_dir` + `docs_*` commands
  * as the Documents pane (T-0714): no new backend commands. An item is either
  * a folder of notes (the entry note, child notes `NNN-...`, task deliverables
- * `NNN-T-xxxx-...`, HTML files, diagram notes — the template keeps them flat)
+ * `NNN-T-xxxx-...`, HTML files, images, diagram notes — the template keeps them flat)
  * or a single `B-NNN-....md` file, the old shape from before folder-first.
  *
  * Read-only throughout: editing stays in Obsidian. Diagram notes open in
@@ -168,7 +169,7 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
               await api.docsListDir(backlogDir).catch(() => [] as DocsEntry[])
             ).filter((e) => e.path === `${backlogDir}/${item.name}`)
           : await api.docsListDir(itemDir);
-        const files = listing.filter(isPreviewable);
+        const files = listing.filter(isPreviewableOrImage);
         const fronts = await Promise.all(
           files.map(async (f) => {
             if (!f.is_markdown) return { type: "", title: "" };
@@ -261,6 +262,7 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
 
   const visible = useMemo(() => filterBacklogItems(items, statusFilter), [items, statusFilter]);
   const current = rows.find((r) => r.entry.path === selectedFile) ?? null;
+  const currentIsImage = !!current && current.kind === "image";
   const currentIsDiagram = !!current && current.kind === "diagram";
   const DiagramIcon =
     current && isDiagramKind(current.diagramKind)
@@ -384,7 +386,9 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
                               row.entry.path === selectedFile && "bg-muted font-medium",
                             )}
                           >
-                            {row.kind === "diagram" && isDiagramKind(row.diagramKind) ? (
+                            {row.kind === "image" ? (
+                              <ImageIcon className="size-3 shrink-0 text-muted-foreground" />
+                            ) : row.kind === "diagram" && isDiagramKind(row.diagramKind) ? (
                               (() => {
                                 const Icon = KIND_ICON[row.diagramKind];
                                 return <Icon className="size-3 shrink-0 text-muted-foreground" />;
@@ -409,6 +413,45 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
             <div className="flex h-full items-center justify-center p-6 text-center text-xs text-muted-foreground">
               {t("projects.view.backlog.pickFile")}
             </div>
+          ) : currentIsImage ? (
+            <>
+              <div className="flex items-center gap-1 border-b px-2 py-1">
+                <Hint label={t("projects.view.docs.backToList")}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t("projects.view.docs.backToList")}
+                    onClick={() => {
+                      setLinkHint("");
+                      setWikiHint(null);
+                      setSelectedFile("");
+                    }}
+                  >
+                    <ArrowLeft />
+                  </Button>
+                </Hint>
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  {backlogDir ? relativeWithin(backlogDir, current.entry.path) : current.entry.path}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => openInObsidian(current.entry.path)}
+                >
+                  <BookOpen className="size-3.5" />
+                  {t("projects.view.docs.openInObsidian")}
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1">
+                <ImagePreview
+                  path={current.entry.path}
+                  title={current.entry.name}
+                  refreshToken={refreshToken}
+                  onError={setError}
+                />
+              </div>
+            </>
           ) : currentIsDiagram ? (
             <>
               <div className="flex items-center gap-1 border-b px-2 py-1">
