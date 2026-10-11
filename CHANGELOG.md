@@ -4,6 +4,8 @@
 
 - **The Projects tab's Backlog and Documents panes now list and preview image files**. A backlog item folder holding screenshots (e.g. `shot-*.png` next to the entry note) showed only its Markdown before; images were filtered out of the file list. Both panes now list png/jpg/gif/webp/bmp/svg/avif files and render the selected one on the pan/zoom canvas the Docs tab uses for figures, through the existing `docs_read_asset` command — no new backend commands. Anything else the preview cannot render (spreadsheets, PDFs) still opens in the OS default app.
 
+- **The Backlog and Documents pane headers take less vertical room** (T-0749). The header row above the item list kept full-height controls with a wide gap below it, wasting the pane's height. The controls are one step shorter and the gap tighter, so the freed room goes to the list and preview; both panes match, and Overview (which has no such header) looks the same.
+
 ## 0.163.2 (2026-10-11)
 
 - **Project slugs and folder names may be Japanese** (T-0748). The owner decision already allowed Japanese slugs (and the app's validation accepts them), but the vault-template docs still mandated English kebab-case, so agents kept following the stale rule. The vault `CLAUDE.md`, the project-layout rule, the project README template and the bottlenecks README now say kebab-case in any script, with the prohibitions the app enforces (no path separators, no leading `_` / `.`, no leading `NNNN-`); the fixed zone names stay lowercase ASCII. Existing vaults pick it up on the next template update.
