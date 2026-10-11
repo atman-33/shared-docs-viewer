@@ -115,6 +115,10 @@ vault housekeeping: its output goes to `_ai/logs/` or `knowledge/`. An empty
 - Write `backlog: B-NNN` onto the task and name the chosen item in your first
   message.
 
+A task's output, whatever its extension (Markdown, image, HTML, binary), goes
+flat in its item folder `backlog/B-NNN-*/`, never in the project's
+`attachments/`.
+
 A recurring task keeps no item: it is a habit, and leaves nothing durable. The
 item format loads from `.claude/rules/backlog.md`, and the layout from
 `.claude/rules/projects.md`, when you work under `projects/`.

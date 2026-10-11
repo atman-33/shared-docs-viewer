@@ -29,8 +29,9 @@ argument-hint: "<task-id>"
        numbering in tens after the highest number already there (`010`,
        `020`, …). Never renumber what is already there: the tens exist so a
        note that belongs in between can be `015`. Non-Markdown output (a test
-       report, an exported image) goes in the same folder, flat — no
-       sub-folders.
+       report, an image, HTML, any binary) goes in the same folder, flat — no
+       sub-folders — named `NNN-<task-id>-<name>.<ext>`, never in the
+       project's `attachments/`. Link it from `## Results`.
      - If you are moving a note that **already existed** under another name,
        add its old basename to its frontmatter as an alias:
 

@@ -36,7 +36,7 @@ Link to the full spec in [`prd.md`](prd.md).
 | `backlog/` | One note or folder per unit of work — its spec, its research, its task outputs. See the Base view below |
 | `dev-notes/` | Cross-cutting knowledge: architecture, environment, conventions |
 | `shared/` | Team knowledge bases outside the vault — where each one is and how it is organised |
-| `attachments/` | Images and binaries for this project |
+| `attachments/` | Manually pasted material that belongs to the project as a whole, not to any backlog item. Anything an item or task produced goes in that item's folder, not here |
 
 Nothing else belongs at the project root. If a document fits none of the
 folders above, add a folder for it (English kebab-case) and list it in this
