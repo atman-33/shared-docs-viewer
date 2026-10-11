@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.163.2 (2026-10-11)
+
+- **Project slugs and folder names may be Japanese** (T-0748). The owner decision already allowed Japanese slugs (and the app's validation accepts them), but the vault-template docs still mandated English kebab-case, so agents kept following the stale rule. The vault `CLAUDE.md`, the project-layout rule, the project README template and the bottlenecks README now say kebab-case in any script, with the prohibitions the app enforces (no path separators, no leading `_` / `.`, no leading `NNNN-`); the fixed zone names stay lowercase ASCII. Existing vaults pick it up on the next template update.
+
 ## 0.163.1 (2026-10-11)
 
 - **Task outputs of any kind now go in the backlog item folder, not in the project's `attachments/`** (T-0745). The project rules said `attachments/` held "images and binaries for this project", while the rule that non-Markdown output sits in the item folder only loaded under `backlog/`, so a task's first image landed in `attachments/`. `attachments/` is now described as project-wide, manually pasted material only; the project layout rule, the backlog rule, the vault `CLAUDE.md`, the project README template and the `task-report` skill all say that an image, HTML or binary a task produced goes flat in `backlog/B-NNN-*/` as `NNN-T-XXXX-<name>.<ext>` and is linked from `## Results`. Existing misplaced files are not moved.
