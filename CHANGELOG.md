@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.163.4 (2026-10-11)
+
+- **The Backlog header's Status filter is the same height as Refresh** (T-0751). The T-0749 pass shortened the header controls, but the filter's `h-6` class lost to the select component's taller default on specificity, so the dropdown alone stayed 36px tall and pushed the row down. The filter now pins the small size at the same specificity, so the whole row sits at 24px and matches the Documents pane again.
+
 ## 0.163.3 (2026-10-11)
 
 - **The Projects tab's Backlog and Documents panes now list and preview image files**. A backlog item folder holding screenshots (e.g. `shot-*.png` next to the entry note) showed only its Markdown before; images were filtered out of the file list. Both panes now list png/jpg/gif/webp/bmp/svg/avif files and render the selected one on the pan/zoom canvas the Docs tab uses for figures, through the existing `docs_read_asset` command — no new backend commands. Anything else the preview cannot render (spreadsheets, PDFs) still opens in the OS default app.
