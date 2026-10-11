@@ -191,7 +191,7 @@ export function ProjectDocuments({
   const showImage = !showDiagram && !!selected && previewKindForPath(selected) === "image";
 
   return (
-    <section aria-label={t("projects.view.documentsTab")} className="flex h-full min-h-0 flex-col gap-1.5">
+    <section aria-label={t("projects.view.documentsTab")} className="flex h-full min-h-0 flex-col gap-1">
       <div className="flex shrink-0 items-center justify-between gap-2">
         <h3 className="text-xs font-semibold uppercase text-muted-foreground">
           {t("projects.view.documentsTab")}
@@ -199,7 +199,7 @@ export function ProjectDocuments({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 gap-1.5"
+          className="h-6 gap-1.5"
           disabled={loading}
           onClick={() => setRefreshToken((n) => n + 1)}
         >

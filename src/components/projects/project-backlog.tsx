@@ -270,7 +270,7 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
       : Shapes;
 
   return (
-    <section aria-label={t("projects.view.backlogTab")} className="flex h-full min-h-0 flex-col gap-1.5">
+    <section aria-label={t("projects.view.backlogTab")} className="flex h-full min-h-0 flex-col gap-1">
       <div className="flex shrink-0 items-center justify-between gap-2">
         <h3 className="text-xs font-semibold uppercase text-muted-foreground">
           {t("projects.view.backlogTab")}
@@ -282,7 +282,7 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
               value={statusFilter || ALL_STATUSES}
               onValueChange={(v) => setStatusFilter(v === ALL_STATUSES ? "" : v)}
             >
-              <SelectTrigger className="h-7 w-28 text-[11px]">
+              <SelectTrigger className="h-6 w-28 text-[11px]">
                 <SelectValue placeholder={t("projects.view.backlog.filterAll")} />
               </SelectTrigger>
               <SelectContent>
@@ -298,7 +298,7 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 gap-1.5"
+            className="h-6 gap-1.5"
             disabled={loading}
             onClick={() => setRefreshToken((n) => n + 1)}
           >
