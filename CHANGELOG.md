@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.163.1 (2026-10-11)
+
+- **Task outputs of any kind now go in the backlog item folder, not in the project's `attachments/`** (T-0745). The project rules said `attachments/` held "images and binaries for this project", while the rule that non-Markdown output sits in the item folder only loaded under `backlog/`, so a task's first image landed in `attachments/`. `attachments/` is now described as project-wide, manually pasted material only; the project layout rule, the backlog rule, the vault `CLAUDE.md`, the project README template and the `task-report` skill all say that an image, HTML or binary a task produced goes flat in `backlog/B-NNN-*/` as `NNN-T-XXXX-<name>.<ext>` and is linked from `## Results`. Existing misplaced files are not moved.
+
 ## 0.163.0 (2026-10-11)
 
 - **Schedule and Mindmap now live in one Diagrams tab, together with the new diagram kinds**. The tab lists every diagram note of a project (or of all projects), found by its `type`, with a filter by kind and one place to create, rename and delete. Top-level tabs can also be hidden and reordered, and Ctrl+K switches between them. One `diagram-edit` skill and one runner now handle AI editing for every kind, so a new kind needs no new skill (T-0701).
