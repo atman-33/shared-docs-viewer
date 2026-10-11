@@ -27,7 +27,7 @@ assigns the number and fills in `templates/project/`'s placeholders.
 | `schedules/` | Schedule notes (`<name>.md`), one per plan under consideration; edited in the Diagrams tab. Created with the first one |
 | `mindmaps/` | Mindmap notes (`<name>.md`), one per map; edited in the Diagrams tab. Created with the first one |
 | `shared/` | Shared-space notes (`<name>.md`), one per team knowledge base that lives outside the vault — where it is and how it is organised |
-| `attachments/` | Images and binaries for this project |
+| `attachments/` | Manually pasted material that belongs to the project as a whole, not to any backlog item. Anything an item or task produced goes in that item's folder, not here |
 | `_index.md` | Machine-readable index, maintained by `/kb-index` |
 
 - **The project root is a closed set.** Only `README.md`, `prd.md`,
@@ -41,7 +41,8 @@ assigns the number and fills in `templates/project/`'s placeholders.
 - **Put things in their home:** product intent → `prd.md`; schedule →
   `roadmap.md`; anything belonging to one unit of work → that item's
   `backlog/B-NNN-<title>/` (spec, research, and the output of every task it
-  spawned, linked from the task's `## Results`); knowledge that serves the
+  spawned, linked from the task's `## Results`); an image, HTML or other
+  binary a task produced → the same item folder, never `attachments/`; knowledge that serves the
   whole project → `dev-notes/`; external links → `links.md` (links to the
   console, never credentials or tokens).
 - Folder names are English kebab-case; note file names may be Japanese.
