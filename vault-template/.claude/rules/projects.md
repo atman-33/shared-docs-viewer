@@ -12,7 +12,8 @@ scan the whole folder.
 ## Layout
 
 Each development project gets one folder under `projects/NNNN-<project-slug>/`
-(slug in English kebab-case). Create one from the app's **Projects** tab, which
+(slug in kebab-case, in any script — a Japanese slug such as `仕事関連` is
+fine). Create one from the app's **Projects** tab, which
 assigns the number and fills in `templates/project/`'s placeholders.
 
 | Path | Contents |
@@ -35,8 +36,8 @@ assigns the number and fills in `templates/project/`'s placeholders.
   folder; every other note goes in a subfolder.
 - **No standard home fits? Create a subfolder.** The layout is written for
   development projects; an operational one may hold correspondence,
-  applications, statements. Make a folder for that kind of document (English
-  kebab-case), then register it in `README.md`'s *Where things live* table and
+   applications, statements. Make a folder for that kind of document (kebab-case,
+   in any script — Japanese is fine), then register it in `README.md`'s *Where things live* table and
   in `_index.md`.
 - **Put things in their home:** product intent → `prd.md`; schedule →
   `roadmap.md`; anything belonging to one unit of work → that item's
@@ -45,7 +46,7 @@ assigns the number and fills in `templates/project/`'s placeholders.
   binary a task produced → the same item folder, never `attachments/`; knowledge that serves the
   whole project → `dev-notes/`; external links → `links.md` (links to the
   console, never credentials or tokens).
-- Folder names are English kebab-case; note file names may be Japanese.
+- Folder names are kebab-case in any script (Japanese is fine); note file names may be Japanese.
 - **Backlog ≠ tasks.** `backlog/` holds units of work and what they produce;
   `tasks/` (vault root) is the app's executable task list. Details are in the
   backlog rule.

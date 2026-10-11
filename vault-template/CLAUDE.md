@@ -25,8 +25,12 @@ is touched: `tasks.md`, `projects.md`, `backlog.md`, `schedules.md`,
 | `_ai/` | **AI only** | working data: `index/`, `logs/` (agent reports, `kb-log.md`), `comms/`, `state/`. Knowledge belongs in `memory/` |
 | `.workhub/` | **app only** | `settings.json`, the settings that describe this vault; change them in the app's Settings dialog |
 
-Folder names are lowercase kebab-case, topic folders under `knowledge/`
-included.
+The fixed zone names (`tasks/`, `projects/`, `knowledge/`, …) stay lowercase
+ASCII. Anything an agent or the owner names — project slugs, `knowledge/`
+topic folders, other subfolders, note file names — is kebab-case in any
+script: Japanese is fine (`0002-仕事関連/` reads like `0010-workhub/`).
+Never use path separators, a leading `_` or `.`, or a leading `NNNN-`
+(the app assigns the project number).
 
 ## Working agreement
 
