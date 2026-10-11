@@ -282,7 +282,10 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
               value={statusFilter || ALL_STATUSES}
               onValueChange={(v) => setStatusFilter(v === ALL_STATUSES ? "" : v)}
             >
-              <SelectTrigger className="h-6 w-28 text-[11px]">
+              <SelectTrigger
+                size="sm"
+                className="h-6 w-28 px-2 py-0 text-[11px] data-[size=sm]:h-6 [&_svg:not([class*='size-'])]:size-3"
+              >
                 <SelectValue placeholder={t("projects.view.backlog.filterAll")} />
               </SelectTrigger>
               <SelectContent>
