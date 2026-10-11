@@ -39,7 +39,8 @@ Link to the full spec in [`prd.md`](prd.md).
 | `attachments/` | Manually pasted material that belongs to the project as a whole, not to any backlog item. Anything an item or task produced goes in that item's folder, not here |
 
 Nothing else belongs at the project root. If a document fits none of the
-folders above, add a folder for it (English kebab-case) and list it in this
+folders above, add a folder for it (kebab-case, in any script — Japanese is
+fine) and list it in this
 table — don't leave the note loose at the root.
 
 ## Reading order

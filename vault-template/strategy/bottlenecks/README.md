@@ -19,7 +19,7 @@ you tried, what it cost, what you learned. That history is what stops the
 
 ## File convention
 
-`<slug>.md` in this folder, English kebab-case. Frontmatter:
+`<slug>.md` in this folder, kebab-case in any script (Japanese is fine). Frontmatter:
 
 ```yaml
 title: Cannot ship without a designer
