@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
 import { ArrowLeft, BookOpen, RefreshCw, Shapes } from "lucide-react";
 import { DocsPreview, type UnresolvedWikiLink } from "@/components/docs/docs-preview";
+import { ImagePreview } from "@/components/docs/image-preview";
 import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Hint } from "@/components/ui/hint";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { isPreviewableOrImage, previewKindForPath } from "@/lib/docs/preview-kind";
 import { isWithinRoot } from "@/lib/docs/tree-nav";
 import type { DiagramKind } from "@/lib/diagram-kinds";
 import {
@@ -34,7 +36,8 @@ import { cn } from "@/lib/utils";
  * Read-only throughout, except for diagram notes: those open in place with
  * the real editor view for their kind (T-0738) — the same view the Diagrams
  * tab embeds — beside the "Open in Diagrams tab" button. Every other document
- * is read through the Docs tab's `DocsPreview`, and editing stays in Obsidian,
+ * is read through the Docs tab's `DocsPreview`, except standalone images,
+ * which render on the pan/zoom canvas, and editing stays in Obsidian,
  * which is why every document carries an "Open in Obsidian" action. Links that leave the project
  * folder are not followed in the pane — a banner points at Obsidian instead —
  * so an unresolvable link shows a hint rather than a broken view. A
@@ -99,9 +102,7 @@ export function ProjectDocuments({
       const settled = await Promise.allSettled(subdirs.map((d) => api.docsListDir(d)));
       const rest: ProjectDocGroup[] = settled.flatMap((r, i) => {
         if (r.status !== "fulfilled") return [];
-        const files = r.value.filter(
-          (e) => !e.is_dir && (e.is_markdown || e.is_html || e.is_text),
-        );
+        const files = r.value.filter((e) => isPreviewableOrImage(e));
         if (files.length === 0) return [];
         return [{ dir: subdirs[i].slice(resolved.length + 1), files }];
       });
@@ -120,6 +121,12 @@ export function ProjectDocuments({
 
   useEffect(() => {
     if (!selected) {
+      setDiagram(null);
+      return;
+    }
+    // Images never carry a diagram frontmatter; reading one as text would
+    // only produce a backend error, so skip the lookup.
+    if (previewKindForPath(selected) === "image") {
       setDiagram(null);
       return;
     }
@@ -179,6 +186,9 @@ export function ProjectDocuments({
   // The selected file is a diagram note of a known kind: it renders with the
   // embedded editor, not the Markdown preview.
   const showDiagram = diagram && diagram.path === selected ? diagram : null;
+  // A standalone image file renders on the pan/zoom canvas, not in the
+  // Markdown preview (which would try to read it as text).
+  const showImage = !showDiagram && !!selected && previewKindForPath(selected) === "image";
 
   return (
     <section aria-label={t("projects.view.documentsTab")} className="flex h-full min-h-0 flex-col gap-1.5">
@@ -269,6 +279,41 @@ export function ProjectDocuments({
             <div className="flex h-full items-center justify-center p-6 text-center text-xs text-muted-foreground">
               {t("projects.view.docs.pickPrompt")}
             </div>
+          ) : showImage ? (
+            <>
+              <div className="flex items-center gap-1 border-b px-2 py-1">
+                <Hint label={t("projects.view.docs.backToList")}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t("projects.view.docs.backToList")}
+                    onClick={backToList}
+                  >
+                    <ArrowLeft />
+                  </Button>
+                </Hint>
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  {dir ? docLabel(dir, selected) : selected}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => openInObsidian(selected)}
+                >
+                  <BookOpen className="size-3.5" />
+                  {t("projects.view.docs.openInObsidian")}
+                </Button>
+              </div>
+              <div className="min-h-0 flex-1">
+                <ImagePreview
+                  path={selected}
+                  title={selected.split("/").pop() || selected}
+                  refreshToken={refreshToken}
+                  onError={setError}
+                />
+              </div>
+            </>
           ) : showDiagram ? (
             <>
               <div className="flex items-center gap-1 border-b px-2 py-1">

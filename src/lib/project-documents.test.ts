@@ -34,9 +34,10 @@ describe("isProjectDocDir", () => {
 });
 
 describe("isListableDoc", () => {
-  it("offers previewable files and no folders or binaries", () => {
+  it("offers previewable files and images, and no folders or other binaries", () => {
     expect(isListableDoc(entry("README.md"))).toBe(true);
     expect(isListableDoc(entry("notes.json"))).toBe(true);
+    expect(isListableDoc(entry("shot-01-base.png"))).toBe(true);
     expect(isListableDoc(entry("dev-notes", true))).toBe(false);
     expect(isListableDoc(entry("sheet.xlsx"))).toBe(false);
   });
@@ -47,6 +48,7 @@ describe("groupProjectDocEntries", () => {
     const { groups, subdirs } = groupProjectDocEntries([
       entry("README.md"),
       entry("prd.md"),
+      entry("cover.png"),
       entry("sheet.xlsx"),
       entry("dev-notes", true),
       entry("shared", true),
@@ -55,7 +57,7 @@ describe("groupProjectDocEntries", () => {
     ]);
     expect(groups).toHaveLength(1);
     expect(groups[0].dir).toBe("");
-    expect(groups[0].files.map((f) => f.name)).toEqual(["README.md", "prd.md"]);
+    expect(groups[0].files.map((f) => f.name)).toEqual(["README.md", "cover.png", "prd.md"]);
     expect(subdirs).toEqual([
       "C:/vault/projects/demo/dev-notes",
       "C:/vault/projects/demo/shared",

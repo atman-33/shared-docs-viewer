@@ -11,10 +11,21 @@
 import type { DocsEntry } from "@/types";
 
 /** Which renderer a file gets; `null` for one only the OS can open. */
-export type PreviewKind = "markdown" | "html" | "text" | null;
+export type PreviewKind = "markdown" | "html" | "text" | "image" | null;
 
 const MARKDOWN_EXTENSIONS = ["md", "markdown"];
 const HTML_EXTENSIONS = ["html", "htm"];
+
+/**
+ * Image kinds the preview inlines through `docs_read_asset`, mirroring
+ * `media_type` in `src-tauri/src/docs.rs`.
+ *
+ * Unlike the text list above, the backend sends no flag for these — a
+ * `DocsEntry` carries only `is_markdown` / `is_html` / `is_text` — so the
+ * answer comes from the name alone, via `previewKindForPath` and
+ * `isImageEntry` below.
+ */
+export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "avif"];
 
 /**
  * Plain-text kinds, mirroring `TEXT_EXTENSIONS` in `src-tauri/src/docs.rs`.
@@ -54,6 +65,7 @@ export function previewKindForPath(path: string): PreviewKind {
   if (MARKDOWN_EXTENSIONS.includes(ext)) return "markdown";
   if (HTML_EXTENSIONS.includes(ext)) return "html";
   if (TEXT_EXTENSIONS.includes(ext)) return "text";
+  if (IMAGE_EXTENSIONS.includes(ext)) return "image";
   return null;
 }
 
@@ -66,4 +78,21 @@ export function previewKindForPath(path: string): PreviewKind {
  */
 export function isPreviewable(entry: DocsEntry): boolean {
   return !entry.is_dir && (entry.is_markdown || entry.is_html || entry.is_text);
+}
+
+/**
+ * True for an image file the preview can inline through `docs_read_asset`.
+ *
+ * Judged from the name: the backend sends no image flag on `DocsEntry`.
+ * `isPreviewable` is deliberately left alone — the Docs tab's tree hands
+ * anything else to the OS, and that behaviour stays as it is.
+ */
+export function isImageEntry(entry: DocsEntry): boolean {
+  return !entry.is_dir && previewKindForPath(entry.name) === "image";
+}
+
+/** True for a row the Projects panes offer to read: text the preview renders,
+ * or an image it inlines. */
+export function isPreviewableOrImage(entry: DocsEntry): boolean {
+  return isPreviewable(entry) || isImageEntry(entry);
 }

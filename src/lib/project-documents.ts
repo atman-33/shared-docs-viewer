@@ -12,7 +12,7 @@
  * the grouping and filtering rules can be pinned down by tests instead of by
  * looking at the pane.
  */
-import { isPreviewable } from "@/lib/docs/preview-kind";
+import { isPreviewableOrImage } from "@/lib/docs/preview-kind";
 import { relativeWithin } from "@/lib/docs/tree-nav";
 import type { DocsEntry } from "@/types";
 
@@ -30,7 +30,7 @@ export function isProjectDocDir(name: string): boolean {
 
 /** True for a row the pane offers to read: a file the preview can render. */
 export function isListableDoc(entry: DocsEntry): boolean {
-  return isPreviewable(entry);
+  return isPreviewableOrImage(entry);
 }
 
 /** One listed group: the files at the project root, or inside one subfolder. */
