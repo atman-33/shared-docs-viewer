@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.163.6 (2026-10-13)
+
+- **Open Explorer is now a button on each Repos row** (T-0797). It used to be reachable only from the row's ⋯ menu, a detour for one of the most frequent things to do with a repository. The row now reads Terminal, Explorer, Graph, Code, ⋯, so the two "open this folder outside the app" actions sit next to each other and the existing buttons keep their places. The menu entry stays, as Terminal's does.
+
 ## 0.163.5 (2026-10-13)
 
 - **The Diagrams tab no longer jumps back to the note opened from the Backlog pane.** After "Open in Diagrams tab" selected a note, picking another one and editing it (collapsing a mindmap node, any write-back) made the tab snap back to the first note: the write reloaded the listing, and the effect that applies the Backlog's focus request re-ran on every reload instead of once. A focus request is now applied once per request, so the selection stays where the owner put it.
