@@ -19,3 +19,24 @@ export interface TabFocus {
    */
   path?: string;
 }
+
+/**
+ * The note a pending focus request should select now, or `null`.
+ *
+ * A request is applied once: `handledN` is the counter of the last request
+ * applied, so a later listing reload (every write-back of an open note fires
+ * `diagrams-changed`) does not drag the selection back to the requested note
+ * after the owner picked another one. The request waits until the listing
+ * holds the note, since it loads after the project is set.
+ */
+export function focusPathToApply(args: {
+  n: number;
+  path: string;
+  handledN: number;
+  filesLoaded: boolean;
+  files: readonly { path: string }[];
+}): string | null {
+  const { n, path, handledN, filesLoaded, files } = args;
+  if (n <= 0 || !path || n === handledN || !filesLoaded) return null;
+  return files.some((f) => f.path === path) ? path : null;
+}

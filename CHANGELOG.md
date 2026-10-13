@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.163.5 (2026-10-13)
+
+- **The Diagrams tab no longer jumps back to the note opened from the Backlog pane.** After "Open in Diagrams tab" selected a note, picking another one and editing it (collapsing a mindmap node, any write-back) made the tab snap back to the first note: the write reloaded the listing, and the effect that applies the Backlog's focus request re-ran on every reload instead of once. A focus request is now applied once per request, so the selection stays where the owner put it.
+
 ## 0.163.4 (2026-10-11)
 
 - **The Backlog header's Status filter is the same height as Refresh** (T-0751). The T-0749 pass shortened the header controls, but the filter's `h-6` class lost to the select component's taller default on specificity, so the dropdown alone stayed 36px tall and pushed the row down. The filter now pins the small size at the same specificity, so the whole row sits at 24px and matches the Documents pane again.
