@@ -62,7 +62,7 @@ import {
 } from "@/lib/diagram-list";
 import { isPanelOpen, withPanelOpen, type PanelSide } from "@/lib/diagram-panels";
 import { useT } from "@/lib/i18n";
-import type { TabFocus } from "@/lib/tab-focus";
+import { focusPathToApply, type TabFocus } from "@/lib/tab-focus";
 import { projectNumberedLabel, projectOptionsOf } from "@/lib/vault-project";
 import { readLastVaultPath, readViewState, writeLastVaultPath, writeViewState } from "@/lib/view-state";
 import { shiftDate, toISO, formatRange } from "@/lib/schedule/layout";
@@ -173,10 +173,21 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
       if (!focusPath) setPath("");
     }
   }, [focusN, focusProject, focusPath]);
+  // Applied once per request: this effect re-runs on every listing reload, and
+  // a write-back of the open note reloads it, which would otherwise pull the
+  // selection back to the requested note after the owner picked another.
+  const handledFocusN = useRef(0);
   useEffect(() => {
-    if (focusN > 0 && focusPath && filesLoaded && files.some((f) => f.path === focusPath)) {
-      setPath(focusPath);
-    }
+    const next = focusPathToApply({
+      n: focusN,
+      path: focusPath,
+      handledN: handledFocusN.current,
+      filesLoaded,
+      files,
+    });
+    if (next === null) return;
+    handledFocusN.current = focusN;
+    setPath(next);
   }, [focusN, focusPath, filesLoaded, files]);
 
   // A listing that fails is usually a folder that moved while it was read (an
