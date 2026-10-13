@@ -280,6 +280,23 @@ export const ProjectRow = memo(function ProjectRow({
         <TooltipContent>{t("projects.row.openTerminal")}</TooltipContent>
       </Tooltip>
 
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-7 opacity-60 group-hover:opacity-100"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction({ kind: "explorer" });
+            }}
+          >
+            <FolderOpen className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("projects.row.openInExplorer")}</TooltipContent>
+      </Tooltip>
+
       {info?.is_repo && (
         <Tooltip>
           <TooltipTrigger asChild>
