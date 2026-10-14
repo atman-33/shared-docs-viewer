@@ -73,6 +73,10 @@ const VIEW_ID = "diagrams";
 const KIND_FILTER_KEY = "diagrams.kindFilter";
 const ALL = ALL_KINDS;
 const NEW_PROJECT = "__new__";
+const SIDEBAR_WIDTH_KEY = "diagrams.sidebarWidth";
+const SIDEBAR_DEFAULT = 224;
+const SIDEBAR_MIN = 140;
+const SIDEBAR_MAX = 560;
 /** Same default window as the Schedule tab: six weeks from today. */
 const DEFAULT_RANGE_DAYS = 6 * 7 - 1;
 
@@ -82,6 +86,19 @@ function readKindFilter(): string {
     return saved === ALL || isDiagramKind(saved) ? saved : ALL;
   } catch {
     return ALL;
+  }
+}
+
+function clampSidebar(width: number): number {
+  return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(width)));
+}
+
+function readSidebarWidth(): number {
+  try {
+    const saved = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    return Number.isFinite(saved) && saved > 0 ? clampSidebar(saved) : SIDEBAR_DEFAULT;
+  } catch {
+    return SIDEBAR_DEFAULT;
   }
 }
 
@@ -111,6 +128,38 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   const [project, setProject] = useState(() => readViewState(VIEW_ID).project);
   const [path, setPath] = useState(() => readViewState(VIEW_ID).path);
   const [kindFilter, setKindFilter] = useState(readKindFilter);
+  const [sidebarWidth, setSidebarWidth] = useState(readSidebarWidth);
+
+  const saveSidebarWidth = (width: number) => {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
+    } catch {
+      // Not persisted; the width still applies for this session.
+    }
+  };
+
+  const startSidebarDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    let latest = startWidth;
+    const move = (ev: PointerEvent) => {
+      latest = clampSidebar(startWidth + ev.clientX - startX);
+      setSidebarWidth(latest);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      saveSidebarWidth(latest);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const resetSidebarWidth = () => {
+    setSidebarWidth(SIDEBAR_DEFAULT);
+    saveSidebarWidth(SIDEBAR_DEFAULT);
+  };
   const [files, setFiles] = useState<DiagramFile[]>([]);
   const [filesLoaded, setFilesLoaded] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
@@ -590,7 +639,10 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
       <div className="flex min-h-0 flex-1">
         <div className="relative shrink-0">
           {panelOpen("left") && (
-            <aside className="h-full w-56 overflow-y-auto border-r p-1.5">
+            <aside
+              className="h-full overflow-y-auto border-r p-1.5"
+              style={{ width: sidebarWidth }}
+            >
               {visible.length === 0 ? (
                 <p className="px-2 py-3 text-xs text-muted-foreground">
                   {files.length === 0 ? t("diagram.list.empty") : t("diagram.list.emptyFiltered")}
@@ -650,6 +702,15 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
                 </>
               )}
             </aside>
+          )}
+          {panelOpen("left") && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none hover:bg-primary/20 active:bg-primary/30"
+              onPointerDown={startSidebarDrag}
+              onDoubleClick={resetSidebarWidth}
+            />
           )}
         </div>
 
