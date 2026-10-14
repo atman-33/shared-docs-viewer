@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
 import { ChevronDown, ChevronRight, FolderPlus, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/graph/confirm-dialog";
 import { DiagramAiPanel } from "@/components/diagram/diagram-ai-panel";
@@ -16,6 +17,7 @@ import { MindmapView } from "@/components/mindmap/mindmap-view";
 import { ProjectCreateDialog } from "@/components/schedule/project-create-dialog";
 import { ScheduleView } from "@/components/schedule/schedule-view";
 import { Button } from "@/components/ui/button";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -111,6 +113,8 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   const [project, setProject] = useState(() => readViewState(VIEW_ID).project);
   const [path, setPath] = useState(() => readViewState(VIEW_ID).path);
   const [kindFilter, setKindFilter] = useState(readKindFilter);
+  const listLayout = useDefaultLayout({ id: "diagrams-list-split", storage: localStorage });
+  const listPanel = usePanelRef();
   const [files, setFiles] = useState<DiagramFile[]>([]);
   const [filesLoaded, setFilesLoaded] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
@@ -307,6 +311,15 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   }, [kindFilter]);
 
   const kind: DiagramKind | "" = current && isDiagramKind(current.kind) ? current.kind : "";
+  // Hooks stay above the early returns below. The list panel is collapsed, not
+  // unmounted, when hidden (see the panel group in the render).
+  const leftOpen = !kind || isPanelOpen(config?.settings.diagram_hidden_panels ?? [], kind, "left");
+  useEffect(() => {
+    const p = listPanel.current;
+    if (!p) return;
+    if (leftOpen && p.isCollapsed()) p.expand();
+    else if (!leftOpen && !p.isCollapsed()) p.collapse();
+  }, [leftOpen, listPanel]);
 
   async function rename(file: DiagramFile, title: string) {
     if (!vaultPath) return;
@@ -588,9 +601,25 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <div className="relative shrink-0">
-          {panelOpen("left") && (
-            <aside className="h-full w-56 overflow-y-auto border-r p-1.5">
+        <ResizablePanelGroup orientation="horizontal" className="min-h-0 min-w-0 flex-1" {...listLayout}>
+          {/* Stays mounted while hidden and is collapsed through the panel API:
+              adding or removing a panel recomputes the group's layout (see
+              SidePanel in panel-frame.tsx). */}
+          <ResizablePanel
+            id="list"
+            panelRef={listPanel}
+            defaultSize={leftOpen ? "224px" : "0px"}
+            minSize="140px"
+            maxSize="560px"
+            collapsible
+            collapsedSize={0}
+            onResize={(size) => {
+              const collapsed = size.asPercentage === 0;
+              if (kind && collapsed === leftOpen) setPanelOpen(kind, "left", !collapsed);
+            }}
+            className="min-h-0 min-w-0"
+          >
+            <aside className="h-full overflow-y-auto border-r p-1.5">
               {visible.length === 0 ? (
                 <p className="px-2 py-3 text-xs text-muted-foreground">
                   {files.length === 0 ? t("diagram.list.empty") : t("diagram.list.emptyFiltered")}
@@ -650,10 +679,10 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
                 </>
               )}
             </aside>
-          )}
-        </div>
-
-        <div className="relative min-w-0 flex-1">
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel id="editor" minSize="20%" className="min-h-0 min-w-0">
+        <div className="relative h-full min-w-0">
           {/* Every editor stays mounted so a pending save is never lost to a
               switch between kinds, and each draws only when its own kind is
               open (the others are handed an empty path). */}
@@ -697,6 +726,8 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
             </div>
           )}
         </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
         {aiOpen && aiRun && current && (
           <aside className="flex w-72 shrink-0 flex-col border-l">
