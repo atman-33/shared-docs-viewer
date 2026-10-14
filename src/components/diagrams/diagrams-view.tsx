@@ -311,6 +311,15 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   }, [kindFilter]);
 
   const kind: DiagramKind | "" = current && isDiagramKind(current.kind) ? current.kind : "";
+  // Hooks stay above the early returns below. The list panel is collapsed, not
+  // unmounted, when hidden (see the panel group in the render).
+  const leftOpen = !kind || isPanelOpen(config?.settings.diagram_hidden_panels ?? [], kind, "left");
+  useEffect(() => {
+    const p = listPanel.current;
+    if (!p) return;
+    if (leftOpen && p.isCollapsed()) p.expand();
+    else if (!leftOpen && !p.isCollapsed()) p.collapse();
+  }, [leftOpen, listPanel]);
 
   async function rename(file: DiagramFile, title: string) {
     if (!vaultPath) return;
@@ -410,13 +419,6 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   // no kind, and the list stays shown: nothing else could bring it back.
   const hiddenPanels = config?.settings.diagram_hidden_panels ?? [];
   const panelOpen = (side: PanelSide) => !kind || isPanelOpen(hiddenPanels, kind, side);
-  const leftOpen = panelOpen("left");
-  useEffect(() => {
-    const p = listPanel.current;
-    if (!p) return;
-    if (leftOpen && p.isCollapsed()) p.expand();
-    else if (!leftOpen && !p.isCollapsed()) p.collapse();
-  }, [leftOpen, listPanel]);
   const setPanelOpen = (which: DiagramKind, side: PanelSide, open: boolean) =>
     void patchSettings({
       diagram_hidden_panels: withPanelOpen(
