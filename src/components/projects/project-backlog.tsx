@@ -1,26 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ArrowLeft, BookOpen, Image as ImageIcon, RefreshCw, Shapes } from "lucide-react";
+import { ArrowLeft, BookOpen, Image as ImageIcon, Shapes } from "lucide-react";
 import { DocsPreview, type UnresolvedWikiLink } from "@/components/docs/docs-preview";
 import { ImagePreview } from "@/components/docs/image-preview";
 import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
 import { Button } from "@/components/ui/button";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Hint } from "@/components/ui/hint";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { KIND_ICON, isDiagramKind } from "@/lib/diagram-kinds";
 import { isPreviewableOrImage } from "@/lib/docs/preview-kind";
 import { isWithinRoot, relativeWithin } from "@/lib/docs/tree-nav";
 import { useT } from "@/lib/i18n";
 import {
-  BACKLOG_STATUSES,
   backlogItemFromFrontmatter,
   classifyBacklogFile,
   compareBacklogFiles,
@@ -33,9 +25,6 @@ import {
 } from "@/lib/project-backlog";
 import { cn } from "@/lib/utils";
 import type { DocsEntry, Task } from "@/types";
-
-/** Sentinel for the status filter — Radix rejects an empty string as a value. */
-const ALL_STATUSES = "__all__";
 
 /** One listed file of the selected item, with what it is. */
 interface BacklogFileRow {
@@ -60,6 +49,12 @@ interface Props {
   tasks: Task[];
   /** Bumped by the app shell after settings are saved. */
   configVersion: number;
+  /** Bumped by the tab row's Refresh button (T-0813). */
+  refreshToken: number;
+  /** Status filter chosen in the tab row; empty = all. */
+  statusFilter: string;
+  /** Reports the item list loading, so the tab row can spin its Refresh icon. */
+  onLoadingChange: (loading: boolean) => void;
   /** Opens the Diagrams tab with this diagram note selected. */
   onOpenDiagrams: (diagramPath: string) => void;
 }
@@ -87,7 +82,17 @@ interface Props {
  * The parent mounts this per project (`key={slug}`), so the selection cannot
  * leak across projects.
  */
-export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVersion, onOpenDiagrams }: Props) {
+export function ProjectBacklog({
+  vaultPath,
+  slug,
+  fallbackDir,
+  tasks,
+  configVersion,
+  refreshToken,
+  statusFilter,
+  onLoadingChange,
+  onOpenDiagrams,
+}: Props) {
   const t = useT();
   // The list / preview split survives a restart, like the Docs tab's (T-0279).
   const backlogSplit = useDefaultLayout({ id: "projects-backlog-split", storage: localStorage });
@@ -98,7 +103,6 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
   // the `B-NNN` id when two folders share one.
   const [selectedItem, setSelectedItem] = useState("");
   const [selectedFile, setSelectedFile] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [linkHint, setLinkHint] = useState("");
   // A `[[wikilink]]` click with no single file to open (T-0726): the link as
   // written, and how many files answer to it (0 when none does).
@@ -106,7 +110,10 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
   const [loading, setLoading] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [error, setError] = useState("");
-  const [refreshToken, setRefreshToken] = useState(0);
+
+  useEffect(() => {
+    onLoadingChange(loading);
+  }, [loading, onLoadingChange]);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -271,45 +278,6 @@ export function ProjectBacklog({ vaultPath, slug, fallbackDir, tasks, configVers
 
   return (
     <section aria-label={t("projects.view.backlogTab")} className="flex h-full min-h-0 flex-col gap-1">
-      <div className="flex shrink-0 items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase text-muted-foreground">
-          {t("projects.view.backlogTab")}
-        </h3>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            {t("projects.view.backlog.filterLabel")}
-            <Select
-              value={statusFilter || ALL_STATUSES}
-              onValueChange={(v) => setStatusFilter(v === ALL_STATUSES ? "" : v)}
-            >
-              <SelectTrigger
-                size="sm"
-                className="h-6 w-28 px-2 py-0 text-[11px] data-[size=sm]:h-6 [&_svg:not([class*='size-'])]:size-3"
-              >
-                <SelectValue placeholder={t("projects.view.backlog.filterAll")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_STATUSES}>{t("projects.view.backlog.filterAll")}</SelectItem>
-                {BACKLOG_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 gap-1.5"
-            disabled={loading}
-            onClick={() => setRefreshToken((n) => n + 1)}
-          >
-            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
-            {t("projects.view.refresh")}
-          </Button>
-        </div>
-      </div>
       {error && <p className="shrink-0 text-xs text-destructive">{error}</p>}
       {/* Same fill-the-height split as the Documents pane (T-0737): the
         parent body gives this section its height, so the preview no longer
