@@ -57,6 +57,17 @@ export function textWidth(text: string, fontSize: number): number {
  * an unspaced Japanese phrase must still fit the box rather than overflow it.
  */
 export function wrapTitle(title: string, maxWidth: number, fontSize: number): string[] {
+  // An explicit newline always breaks; each line is then wrapped on its own.
+  if (title.includes("\n")) {
+    return title
+      .trim()
+      .split(/\r?\n/)
+      .flatMap((part) => wrapLine(part, maxWidth, fontSize));
+  }
+  return wrapLine(title, maxWidth, fontSize);
+}
+
+function wrapLine(title: string, maxWidth: number, fontSize: number): string[] {
   const text = title.trim();
   if (!text) return [""];
   const limit = Math.max(maxWidth - PAD_X * 2, fontSize * 2);

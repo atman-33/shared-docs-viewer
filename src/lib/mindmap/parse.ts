@@ -372,6 +372,9 @@ interface ParsedLine {
   hadId: boolean;
 }
 
+/** `<br>`, `<br/>` and `<br />`: a line break inside a node title. */
+const BR_RE = /<br\s*\/?>/gi;
+
 /** `  - N-002 タスク管理 #green task:T-0042 prio:high tags:検討中 ^collapsed` */
 function parseNodeLine(line: string): ParsedLine | null {
   const m = /^(\s*)-\s+(.*)$/.exec(line);
@@ -383,7 +386,9 @@ function parseNodeLine(line: string): ParsedLine | null {
   // Tabs are worth one level each; Obsidian may emit either.
   const depth = Math.floor(indent.replace(/\t/g, INDENT).length / INDENT.length);
 
-  const tokens = body.split(/\s+/).filter(Boolean);
+  // A line break inside a title is written `<br>` (T-0815); normalized to one
+  // whitespace-free token before the line is split.
+  const tokens = body.replace(BR_RE, "<br>").split(/\s+/).filter(Boolean);
   let id = "";
   let hadId = false;
   if (ID_RE.test(tokens[0])) {
@@ -436,7 +441,10 @@ function parseNodeLine(line: string): ParsedLine | null {
     hadId,
     node: {
       id,
-      title: titleTokens.join(" "),
+      title: titleTokens
+        .join(" ")
+        .replace(/ ?<br> ?/g, "\n")
+        .replace(/^\n+|\n+$/g, ""),
       children: [],
       ...(color ? { color } : {}),
       ...(task ? { task } : {}),
@@ -649,9 +657,13 @@ export function findParent(roots: MindmapNode[], id: string): MindmapNode | null
 export function formatNode(node: MindmapNode, depth = 0): string[] {
   const pad = INDENT.repeat(depth);
   const parts = [node.id];
-  // Only ever the first line: a stray newline in the title would otherwise
-  // emit a second, unparsable node line.
-  const title = node.title.split("\n")[0].trim();
+  // A newline in the title is written `<br>`: a literal one would emit a
+  // second, unparsable node line.
+  const title = node.title
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .join("<br>")
+    .replace(/^(<br>)+|(<br>)+$/g, "");
   if (title) parts.push(title);
   if (node.color) parts.push(`#${node.color}`);
   if (node.task) parts.push(`task:${node.task}`);
