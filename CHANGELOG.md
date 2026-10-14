@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.164.0 (2026-10-14)
+
+- **A mindmap node's title can now be broken across lines** (T-0815). A long title stretched its box sideways, and the automatic wrap at the maximum box width could not be steered, so it cut a phrase wherever the width ran out. Press Shift+Enter while renaming a node (or Enter in the side panel's title field) to choose where a line ends. The note stores the break as `<br>`, so the node stays one line in the file and still reads as a break in Obsidian; `<br/>` and `<br />` are read too. Before, only a title's first line was written back, so a stray newline was silently dropped. The help screen and the vault-template mindmap rule describe the format; existing vaults pick up the rule on the next template update.
+
+- **The Diagrams tab's left sidebar can be resized by dragging** (T-0814). The width is clamped to 140–560px, remembered, and a double-click on the handle restores the 224px default; it is built on the same resizable panel group the Docs and Projects tabs use.
+
+- **The Projects tab's Refresh button and Backlog status filter now sit in the Overview / Documents / Backlog tab row**, and the duplicate DOCUMENTS / BACKLOG heading rows are gone, so the pane body gets the vertical space.
+
 ## 0.163.6 (2026-10-13)
 
 - **Open Explorer is now a button on each Repos row** (T-0797). It used to be reachable only from the row's ⋯ menu, a detour for one of the most frequent things to do with a repository. The row now reads Terminal, Explorer, Graph, Code, ⋯, so the two "open this folder outside the app" actions sit next to each other and the existing buttons keep their places. The menu entry stays, as Terminal's does.
