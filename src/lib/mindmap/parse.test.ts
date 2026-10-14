@@ -137,13 +137,12 @@ describe("serializeMindmap", () => {
     expect(parseMindmap(out).mintedIds).toBe(false);
   });
 
-  it("keeps a multi-line title on one line", () => {
+  it("writes a multi-line title as one line", () => {
     const content = note("- N-001 root");
     const doc = parseMindmap(content);
     doc.roots[0].title = "first\nsecond";
     const out = serializeMindmap(content, doc, "2026-08-26");
-    expect(out).toContain("- N-001 first\n");
-    expect(out).not.toContain("second");
+    expect(out).toContain("- N-001 first<br>second\n");
   });
 });
 
@@ -615,5 +614,30 @@ describe("indent and outdent", () => {
     expect(outdentNode(build(), "N-001")).toBeNull();
     expect(canOutdent(build(), "N-002")).toBe(false);
     expect(canOutdent(build(), "N-003")).toBe(true);
+  });
+});
+
+describe("line breaks in a node title (T-0815)", () => {
+  it("reads <br>, <br/> and <br /> as a newline", () => {
+    const doc = parseMindmap(note("- N-001 a<br>b #blue\n  - N-002 c <br/> d\n  - N-003 e<br />f"));
+    expect(doc.roots[0].title).toBe("a\nb");
+    expect(doc.roots[0].color).toBe("blue");
+    expect(doc.roots[0].children.map((c) => c.title)).toEqual(["c\nd", "e\nf"]);
+  });
+
+  it("writes a newline back as <br> on one line and round-trips", () => {
+    const content = note("- N-001 root\n  - N-002 first line<br>second line prio:high");
+    const doc = parseMindmap(content);
+    expect(doc.roots[0].children[0].title).toBe("first line\nsecond line");
+    const out = serializeMindmap(content, doc, "2026-10-14");
+    expect(out).toContain("  - N-002 first line<br>second line prio:high");
+    expect(parseMindmap(out).roots[0].children[0].title).toBe("first line\nsecond line");
+  });
+
+  it("drops leading and trailing breaks", () => {
+    const doc = parseMindmap(note("- N-001 root"));
+    doc.roots[0].title = "\na\n\nb\n";
+    const out = serializeMindmap(note("- N-001 root"), doc, "2026-10-14");
+    expect(out).toContain("- N-001 a<br><br>b");
   });
 });

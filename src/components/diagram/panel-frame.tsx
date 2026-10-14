@@ -204,13 +204,29 @@ export function TitleField({
   value,
   placeholder,
   disabled,
+  multiline = false,
   onChange,
 }: {
   value: string;
   placeholder: string;
   disabled?: boolean;
+  /** Keeps line breaks, for a kind whose titles may contain them. */
+  multiline?: boolean;
   onChange: (value: string) => void;
 }) {
+  if (multiline) {
+    return (
+      <Textarea
+        value={value}
+        placeholder={placeholder}
+        rows={Math.min(6, value.split("\n").length)}
+        disabled={disabled}
+        className="min-h-8 resize-none text-xs"
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
+      />
+    );
+  }
   return (
     <Input
       value={value}

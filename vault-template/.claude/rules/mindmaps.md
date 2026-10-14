@@ -72,6 +72,10 @@ Node line:
   list. The app writes it whenever an action implies a side — adding a branch
   beside another, or dragging one across the root — so branches never swap
   sides while the map is being edited.
+- A line break inside a title is written `<br>` (`<br/>` and `<br />` are read
+  too): `- N-002 first line<br>second line #green`. The node stays one line, so
+  never put a literal newline in a title. The app wraps long titles on its own;
+  `<br>` is for choosing where a line ends.
 - A node may carry extra lines of text on **indented continuation lines**
   beneath it, which the app shows on hover.
 

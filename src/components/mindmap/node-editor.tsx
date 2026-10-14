@@ -100,6 +100,7 @@ export function NodeEditor({
         value={node.title}
         placeholder={t("mindmap.nodeEditor.titlePlaceholder")}
         disabled={disabled}
+        multiline
         onChange={(title) => onChange({ title })}
       />
       <NoteField

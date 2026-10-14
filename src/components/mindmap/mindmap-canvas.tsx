@@ -242,7 +242,11 @@ export function MindmapCanvas({
   }, [editingId]);
 
   /** Width the box needs for the text being typed into it. */
-  const draftWidth = Math.ceil(textWidth(draft, DEFAULT_LAYOUT.fontSize)) + NODE_PAD_X * 2 + 16;
+  const draftLines = draft.split("\n");
+  const draftWidth =
+    Math.ceil(Math.max(...draftLines.map((l) => textWidth(l, DEFAULT_LAYOUT.fontSize)))) + NODE_PAD_X * 2 + 16;
+  /** Height for the line breaks typed so far; a one-line draft keeps the node's own. */
+  const draftHeight = Math.ceil(draftLines.length * DEFAULT_LAYOUT.fontSize * 1.45) + 14;
 
   /** True when `id` is `ancestorId` or sits somewhere beneath it. */
   const isWithin = (id: string, ancestorId: string): boolean => {
@@ -376,6 +380,7 @@ export function MindmapCanvas({
           dropTarget={drag?.over === node.id}
           editing={node.id === editingId}
           editingWidth={draftWidth}
+          editingHeight={draftHeight}
           draft={draft}
           onDraftChange={setDraft}
           locked={locked}
@@ -501,6 +506,8 @@ interface NodeProps {
   editing: boolean;
   /** Width the rename box needs for what is typed in it so far. */
   editingWidth: number;
+  /** Height the rename box needs for the line breaks typed so far. */
+  editingHeight: number;
   draft: string;
   onDraftChange: (value: string) => void;
   locked?: boolean;
@@ -530,6 +537,7 @@ function NodeBox({
   dropTarget,
   editing,
   editingWidth,
+  editingHeight,
   draft,
   onDraftChange,
   locked,
@@ -612,8 +620,14 @@ function NodeBox({
       )}
 
       {editing ? (
-        <foreignObject x={x} y={node.y} width={width} height={node.height}>
+        <foreignObject
+          x={x}
+          y={node.y - (Math.max(node.height, editingHeight) - node.height) / 2}
+          width={width}
+          height={Math.max(node.height, editingHeight)}
+        >
           <NodeInput
+            multiline
             value={draft}
             onChange={onDraftChange}
             onCommit={(value) => onCommitEdit(node.id, value)}
