@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
 import { ChevronDown, ChevronRight, FolderPlus, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/graph/confirm-dialog";
 import { DiagramAiPanel } from "@/components/diagram/diagram-ai-panel";
@@ -16,6 +17,7 @@ import { MindmapView } from "@/components/mindmap/mindmap-view";
 import { ProjectCreateDialog } from "@/components/schedule/project-create-dialog";
 import { ScheduleView } from "@/components/schedule/schedule-view";
 import { Button } from "@/components/ui/button";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -73,10 +75,6 @@ const VIEW_ID = "diagrams";
 const KIND_FILTER_KEY = "diagrams.kindFilter";
 const ALL = ALL_KINDS;
 const NEW_PROJECT = "__new__";
-const SIDEBAR_WIDTH_KEY = "diagrams.sidebarWidth";
-const SIDEBAR_DEFAULT = 224;
-const SIDEBAR_MIN = 140;
-const SIDEBAR_MAX = 560;
 /** Same default window as the Schedule tab: six weeks from today. */
 const DEFAULT_RANGE_DAYS = 6 * 7 - 1;
 
@@ -86,19 +84,6 @@ function readKindFilter(): string {
     return saved === ALL || isDiagramKind(saved) ? saved : ALL;
   } catch {
     return ALL;
-  }
-}
-
-function clampSidebar(width: number): number {
-  return Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(width)));
-}
-
-function readSidebarWidth(): number {
-  try {
-    const saved = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
-    return Number.isFinite(saved) && saved > 0 ? clampSidebar(saved) : SIDEBAR_DEFAULT;
-  } catch {
-    return SIDEBAR_DEFAULT;
   }
 }
 
@@ -128,38 +113,8 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   const [project, setProject] = useState(() => readViewState(VIEW_ID).project);
   const [path, setPath] = useState(() => readViewState(VIEW_ID).path);
   const [kindFilter, setKindFilter] = useState(readKindFilter);
-  const [sidebarWidth, setSidebarWidth] = useState(readSidebarWidth);
-
-  const saveSidebarWidth = (width: number) => {
-    try {
-      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
-    } catch {
-      // Not persisted; the width still applies for this session.
-    }
-  };
-
-  const startSidebarDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startWidth = sidebarWidth;
-    let latest = startWidth;
-    const move = (ev: PointerEvent) => {
-      latest = clampSidebar(startWidth + ev.clientX - startX);
-      setSidebarWidth(latest);
-    };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      saveSidebarWidth(latest);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-
-  const resetSidebarWidth = () => {
-    setSidebarWidth(SIDEBAR_DEFAULT);
-    saveSidebarWidth(SIDEBAR_DEFAULT);
-  };
+  const listLayout = useDefaultLayout({ id: "diagrams-list-split", storage: localStorage });
+  const listPanel = usePanelRef();
   const [files, setFiles] = useState<DiagramFile[]>([]);
   const [filesLoaded, setFilesLoaded] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
@@ -455,6 +410,13 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   // no kind, and the list stays shown: nothing else could bring it back.
   const hiddenPanels = config?.settings.diagram_hidden_panels ?? [];
   const panelOpen = (side: PanelSide) => !kind || isPanelOpen(hiddenPanels, kind, side);
+  const leftOpen = panelOpen("left");
+  useEffect(() => {
+    const p = listPanel.current;
+    if (!p) return;
+    if (leftOpen && p.isCollapsed()) p.expand();
+    else if (!leftOpen && !p.isCollapsed()) p.collapse();
+  }, [leftOpen, listPanel]);
   const setPanelOpen = (which: DiagramKind, side: PanelSide, open: boolean) =>
     void patchSettings({
       diagram_hidden_panels: withPanelOpen(
@@ -637,12 +599,25 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <div className="relative shrink-0">
-          {panelOpen("left") && (
-            <aside
-              className="h-full overflow-y-auto border-r p-1.5"
-              style={{ width: sidebarWidth }}
-            >
+        <ResizablePanelGroup orientation="horizontal" className="min-h-0 min-w-0 flex-1" {...listLayout}>
+          {/* Stays mounted while hidden and is collapsed through the panel API:
+              adding or removing a panel recomputes the group's layout (see
+              SidePanel in panel-frame.tsx). */}
+          <ResizablePanel
+            id="list"
+            panelRef={listPanel}
+            defaultSize={leftOpen ? "224px" : "0px"}
+            minSize="140px"
+            maxSize="560px"
+            collapsible
+            collapsedSize={0}
+            onResize={(size) => {
+              const collapsed = size.asPercentage === 0;
+              if (kind && collapsed === leftOpen) setPanelOpen(kind, "left", !collapsed);
+            }}
+            className="min-h-0 min-w-0"
+          >
+            <aside className="h-full overflow-y-auto border-r p-1.5">
               {visible.length === 0 ? (
                 <p className="px-2 py-3 text-xs text-muted-foreground">
                   {files.length === 0 ? t("diagram.list.empty") : t("diagram.list.emptyFiltered")}
@@ -702,19 +677,10 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
                 </>
               )}
             </aside>
-          )}
-          {panelOpen("left") && (
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              className="absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize touch-none hover:bg-primary/20 active:bg-primary/30"
-              onPointerDown={startSidebarDrag}
-              onDoubleClick={resetSidebarWidth}
-            />
-          )}
-        </div>
-
-        <div className="relative min-w-0 flex-1">
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel id="editor" minSize="20%" className="min-h-0 min-w-0">
+        <div className="relative h-full min-w-0">
           {/* Every editor stays mounted so a pending save is never lost to a
               switch between kinds, and each draws only when its own kind is
               open (the others are handed an empty path). */}
@@ -758,6 +724,8 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
             </div>
           )}
         </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
         {aiOpen && aiRun && current && (
           <aside className="flex w-72 shrink-0 flex-col border-l">
