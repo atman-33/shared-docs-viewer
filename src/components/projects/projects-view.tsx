@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { api, timeAgo } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { BACKLOG_STATUSES } from "@/lib/project-backlog";
 import {
   DESCRIPTION_MAX_HEIGHT_PX,
   clampAutoGrowHeight,
@@ -109,6 +110,9 @@ interface Props {
   onProjectsChange?: () => void;
 }
 
+/** Sentinel for the status filter — Radix rejects an empty string as a value. */
+const ALL_BACKLOG_STATUSES = "__all__";
+
 export function ProjectsView({
   configVersion,
   active,
@@ -157,6 +161,11 @@ export function ProjectsView({
   // Kept across projects — the panes themselves are remounted per project,
   // so no document leaks over.
   const [pane, setPane] = useState<"overview" | "documents" | "backlog">("overview");
+  // Controls that live in the tab row but act on the Documents / Backlog
+  // panes (T-0813): the Refresh button and the Backlog status filter.
+  const [paneRefresh, setPaneRefresh] = useState(0);
+  const [paneLoading, setPaneLoading] = useState(false);
+  const [backlogStatusFilter, setBacklogStatusFilter] = useState("");
 
   const vaultPath = config?.settings.vault_path ?? null;
   const repos = config?.projects ?? [];
@@ -629,7 +638,7 @@ export function ProjectsView({
               {/* Overview / Documents / Backlog (T-0714, backlog in T-0715).
                 The switcher sits directly under the header, so it stays
                 visible no matter how far the body has scrolled. */}
-              <div className="flex shrink-0 items-center gap-1 border-b px-3 py-1">
+              <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-1">
                 <Button
                   size="sm"
                   variant={pane === "overview" ? "secondary" : "ghost"}
@@ -654,6 +663,50 @@ export function ProjectsView({
                 >
                   {t("projects.view.backlogTab")}
                 </Button>
+                {/* Overview has no Refresh of its own: its content is the
+                  project list, which the toolbar's Refresh already reloads. */}
+                {pane !== "overview" && (
+                  <div className="ml-auto flex items-center gap-2">
+                    {pane === "backlog" && (
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        {t("projects.view.backlog.filterLabel")}
+                        <Select
+                          value={backlogStatusFilter || ALL_BACKLOG_STATUSES}
+                          onValueChange={(v) =>
+                            setBacklogStatusFilter(v === ALL_BACKLOG_STATUSES ? "" : v)
+                          }
+                        >
+                          <SelectTrigger
+                            size="sm"
+                            className="h-6 w-28 px-2 py-0 text-[11px] data-[size=sm]:h-6 [&_svg:not([class*='size-'])]:size-3"
+                          >
+                            <SelectValue placeholder={t("projects.view.backlog.filterAll")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={ALL_BACKLOG_STATUSES}>
+                              {t("projects.view.backlog.filterAll")}
+                            </SelectItem>
+                            {BACKLOG_STATUSES.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </label>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 gap-1.5"
+                      disabled={paneLoading}
+                      onClick={() => setPaneRefresh((n) => n + 1)}
+                    >
+                      <RefreshCw className={cn("size-3.5", paneLoading && "animate-spin")} />
+                      {t("projects.view.refresh")}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* The only scrolling region: Overview scrolls as a page, while
@@ -670,6 +723,8 @@ export function ProjectsView({
                     vaultPath={vaultPath}
                     slug={current.slug}
                     configVersion={configVersion}
+                    refreshToken={paneRefresh}
+                    onLoadingChange={setPaneLoading}
                     onOpenDiagrams={(diagramPath) => onNavigate("diagrams", current.slug, diagramPath)}
                   />
                 ) : pane === "backlog" ? (
@@ -680,6 +735,9 @@ export function ProjectsView({
                     fallbackDir={current.path}
                     tasks={tasks}
                     configVersion={configVersion}
+                    refreshToken={paneRefresh}
+                    statusFilter={backlogStatusFilter}
+                    onLoadingChange={setPaneLoading}
                     onOpenDiagrams={(diagramPath) => onNavigate("diagrams", current.slug, diagramPath)}
                   />
                 ) : (

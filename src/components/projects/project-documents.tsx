@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ArrowLeft, BookOpen, RefreshCw, Shapes } from "lucide-react";
+import { ArrowLeft, BookOpen, Shapes } from "lucide-react";
 import { DocsPreview, type UnresolvedWikiLink } from "@/components/docs/docs-preview";
 import { ImagePreview } from "@/components/docs/image-preview";
 import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
@@ -53,12 +53,18 @@ export function ProjectDocuments({
   vaultPath,
   slug,
   configVersion,
+  refreshToken,
+  onLoadingChange,
   onOpenDiagrams,
 }: {
   vaultPath: string;
   slug: string;
   /** Bumped by the app shell after settings are saved. */
   configVersion: number;
+  /** Bumped by the tab row's Refresh button (T-0813). */
+  refreshToken: number;
+  /** Reports the document list loading, so the tab row can spin its Refresh icon. */
+  onLoadingChange: (loading: boolean) => void;
   /** Opens the Diagrams tab with this diagram note selected. */
   onOpenDiagrams: (diagramPath: string) => void;
 }) {
@@ -74,13 +80,16 @@ export function ProjectDocuments({
   const [wikiHint, setWikiHint] = useState<{ target: string; count: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [refreshToken, setRefreshToken] = useState(0);
   // The selected file's diagram kind, read off its frontmatter `type` — the
   // same rule the Backlog pane uses. `path` guards against a read that lands
   // after the selection moved on.
   const [diagram, setDiagram] = useState<{ path: string; kind: DiagramKind; title: string } | null>(
     null,
   );
+
+  useEffect(() => {
+    onLoadingChange(loading);
+  }, [loading, onLoadingChange]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,21 +201,6 @@ export function ProjectDocuments({
 
   return (
     <section aria-label={t("projects.view.documentsTab")} className="flex h-full min-h-0 flex-col gap-1">
-      <div className="flex shrink-0 items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase text-muted-foreground">
-          {t("projects.view.documentsTab")}
-        </h3>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 gap-1.5"
-          disabled={loading}
-          onClick={() => setRefreshToken((n) => n + 1)}
-        >
-          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
-          {t("projects.view.refresh")}
-        </Button>
-      </div>
       {error && <p className="shrink-0 text-xs text-destructive">{error}</p>}
       {/* Fills the detail pane's remaining height (T-0737): the parent body
         gives this section its height, and the list/preview split takes the
