@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { scheduleExportSvg, SCHEDULE_IMAGE_WIDTH } from "./export-image";
+import { buildLayout } from "./layout";
 import type { ScheduleDocModel } from "./parse";
 
 function docWith(items: ScheduleDocModel["items"]): ScheduleDocModel {
@@ -73,5 +74,14 @@ describe("scheduleExportSvg", () => {
     });
     expect(timeline).toContain("<foreignObject");
     expect(heightOf(timeline)).toBeGreaterThan(0);
+  });
+
+  it("grows the frame by the extra for every week of the window", () => {
+    const opts = { start: "2026-10-05", end: "2026-10-18", today: "2026-10-11", locale: "en" as const };
+    const height = (svg: string) => Number(/height="(\d+)"/.exec(svg)?.[1]);
+    const base = height(scheduleExportSvg(docWith([BAR]), opts));
+    const tall = height(scheduleExportSvg(docWith([BAR]), { ...opts, cellExtra: 64 }));
+    const weeks = buildLayout(docWith([BAR]), opts.start, opts.end, opts.today).weeks.length;
+    expect(tall - base).toBe(weeks * 64);
   });
 });

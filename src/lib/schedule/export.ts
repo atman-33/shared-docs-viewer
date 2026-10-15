@@ -15,6 +15,7 @@
  * any policy and "Print → Save as PDF" is the whole distribution story.
  */
 
+import { clampCellExtra } from "./cell-height";
 import { monthLabel, strings, type ScheduleLocale } from "./i18n";
 import { buildLayout, countWorkingDays, type Layout } from "./layout";
 import { COLOR_HEX, type ScheduleDocModel, type ScheduleItem } from "./parse";
@@ -43,6 +44,9 @@ const HEAD_H = 20;
  * not it holds anything, so the grid keeps a constant week pitch instead of
  * collapsing to the height of its contents. */
 const CELL_H = 96;
+/** Base day-cell height, exported so the image frame can size itself from the
+ * same number the stylesheet uses. */
+export const CELL_MIN_H = CELL_H;
 
 /** Lane pitch of the timeline's bars and point elements, in px. Slightly
  * roomier than the calendar's: a timeline lane carries a full title where the
@@ -56,7 +60,7 @@ const TL_POINT_H = 16;
  * grid's aspect ratio, and `break-inside: avoid` on week rows is what stops a
  * bar from being sliced in half across a page break (§8.3).
  */
-function styles(): string {
+function styles(cellExtra: number): string {
   return `
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
@@ -90,7 +94,7 @@ table.days th { width: 14.285%; padding: 4px 6px; border-right: 1px solid #e5e7e
    rather than left to the content: a height on a table cell is a minimum, so
    a week with more lanes than fit still grows. */
 td.daycell {
-  position: relative; vertical-align: top; height: ${CELL_H}px;
+  position: relative; vertical-align: top; height: ${CELL_H + cellExtra}px;
   border-right: 1px solid #e5e7eb; padding: 0 0 3px;
 }
 td.daycell:last-child, table.days th:last-child { border-right: none; }
@@ -332,6 +336,9 @@ export interface ExportOptions {
   /** Which drawing to export. Defaults to the calendar grid, so callers that
    * predate the timeline keep their output byte-for-byte. */
   mode?: "calendar" | "timeline";
+  /** Extra px added to every day cell's minimum height (T-0822); calendar only.
+   * Omitted or 0 leaves the output exactly as it was. */
+  cellExtra?: number;
   /** Date stamped in the header, `YYYY-MM-DD`. Passed in rather than read from
    * the clock so the output is reproducible in tests. */
   today: string;
@@ -360,7 +367,7 @@ export function exportScheduleHtml(doc: ScheduleDocModel, options: ExportOptions
 <head>
 <meta charset="utf-8">
 <title>${esc(doc.title || "schedule")}</title>
-<style>${styles()}</style>
+<style>${styles(mode === "timeline" ? 0 : clampCellExtra(options.cellExtra))}</style>
 </head>
 <body>
 <header>

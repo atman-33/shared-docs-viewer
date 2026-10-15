@@ -17,7 +17,8 @@
  * `&gt;`/`&quot;`, which are valid XML.
  */
 
-import { exportScheduleHtml, type ExportOptions } from "./export";
+import { clampCellExtra } from "./cell-height";
+import { CELL_MIN_H, exportScheduleHtml, type ExportOptions } from "./export";
 import { buildLayout } from "./layout";
 import { buildTimeline } from "./timeline";
 import type { ScheduleDocModel } from "./parse";
@@ -53,12 +54,13 @@ export function scheduleExportSvg(doc: ScheduleDocModel, options: ScheduleImageO
     drawing = 18 + 16 + (tl.sprints.length > 0 ? 14 : 0) + plot;
   } else {
     const layout = buildLayout(doc, start, end, today);
+    const extra = clampCellExtra(options.cellExtra);
     drawing = layout.weeks.reduce((sum, week) => {
       const deepest = Math.max(
         0,
         ...week.days.map((d) => d.points.filter((p) => p.kind !== "note").length),
       );
-      return sum + Math.max(96, 20 + week.lanes * 18 + deepest * 14 + 8);
+      return sum + Math.max(CELL_MIN_H + extra, 20 + week.lanes * 18 + deepest * 14 + 8);
     }, 0);
   }
   const width = SCHEDULE_IMAGE_WIDTH;
