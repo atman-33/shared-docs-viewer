@@ -981,3 +981,50 @@ export function canOutdent(roots: MindmapNode[], id: string): boolean {
   if (!parent || roots.includes(parent)) return false;
   return Boolean(findParent(roots, parent.id));
 }
+
+/**
+ * Moves a branch of a root to the other side of it, subtree and all.
+ *
+ * `to` is the side the branch must end up on; `null` when it already sits
+ * there, or when the node is not a branch of a root — deeper nodes follow their
+ * parent and have no side to flip. The branch keeps its place in the list, so
+ * only the column it is drawn in changes.
+ */
+export function flipRootBranchSide(
+  roots: MindmapNode[],
+  id: string,
+  to: "left" | "right",
+): MindmapNode[] | null {
+  const next = cloneNodes(roots);
+  const parent = findParent(next, id);
+  if (!parent || !next.includes(parent)) return null;
+  const node = findNode(next, id);
+  if (!node) return null;
+  // Freeze first, so flipping one branch cannot shift the unpinned others.
+  freezeRootChildSides(parent);
+  if (node.side === to) return null;
+  node.side = to;
+  return next;
+}
+
+/**
+ * The side of the root a node is drawn on — its own for a branch of a root,
+ * its branch's for anything deeper — or `null` for a top-level root.
+ */
+export function drawnSide(roots: MindmapNode[], id: string): "left" | "right" | null {
+  let current = id;
+  for (;;) {
+    const parent = findParent(roots, current);
+    if (!parent) return null;
+    if (roots.includes(parent)) return rootBranchSide(roots, current);
+    current = parent.id;
+  }
+}
+
+/** The side a branch of a root is drawn on, or `null` for any other node. */
+export function rootBranchSide(roots: MindmapNode[], id: string): "left" | "right" | null {
+  const parent = findParent(roots, id);
+  if (!parent || !roots.includes(parent)) return null;
+  const at = parent.children.findIndex((n) => n.id === id);
+  return rootChildSide(parent.children[at], at);
+}

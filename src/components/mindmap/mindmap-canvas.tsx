@@ -806,13 +806,13 @@ function NodeBox({
         />
         <MenuAction
           label={t("mindmap.canvas.indent")}
-          hint="Alt+Right"
+          hint={node.side === "left" ? "Alt+Left" : "Alt+Right"}
           disabled={!abilities.indent}
           onSelect={() => onNodeAction("indent", node)}
         />
         <MenuAction
           label={t("mindmap.canvas.outdent")}
-          hint="Alt+Left"
+          hint={node.side === "left" ? "Alt+Right" : "Alt+Left"}
           disabled={!abilities.outdent}
           onSelect={() => onNodeAction("outdent", node)}
         />
