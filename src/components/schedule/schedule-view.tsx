@@ -43,6 +43,8 @@ import { projectNumberedLabel, projectOptionsOf } from "@/lib/vault-project";
 import type { TabFocus } from "@/lib/tab-focus";
 import { resolveOpenNote } from "@/lib/note-picker";
 import { readLastVaultPath, readViewState, writeLastVaultPath, writeViewState } from "@/lib/view-state";
+import { CellHeightControl } from "./cell-height-control";
+import { readCellExtra, writeCellExtra } from "@/lib/schedule/cell-height";
 import { exportScheduleHtml } from "@/lib/schedule/export";
 import { scheduleExportSvg } from "@/lib/schedule/export-image";
 import { copySvgAsPng } from "@/lib/diagram/copy-image";
@@ -168,6 +170,12 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
   const [renameTitle, setRenameTitle] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [mode, setMode] = useState<ViewMode>("calendar");
+  // Extra day-cell height, remembered per machine (T-0822); not part of the note.
+  const [cellExtra, setCellExtra] = useState(readCellExtra);
+  const changeCellExtra = useCallback((next: number) => {
+    setCellExtra(next);
+    writeCellExtra(next);
+  }, []);
   // Document snapshots for Ctrl+Z / Ctrl+Shift+Z. In memory only: undo is for
   // "that drag went somewhere I didn't mean", not for history — the file's git
   // backup and the AI-edit snapshot cover the durable cases.
@@ -708,14 +716,14 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
       const out = `${dir.replace(/\\/g, "/").replace(/\/$/, "")}/${name}`;
       // The export follows what is on screen: an approved plan is approved in
       // the drawing it was read in.
-      const html = exportScheduleHtml(doc, { ...window_, today: toISO(new Date()), locale, mode });
+      const html = exportScheduleHtml(doc, { ...window_, today: toISO(new Date()), locale, mode, cellExtra });
       await api.exportScheduleHtml(out, html, guard);
       setStatus(tStatic("schedule.view.exportedTo", { path: out }));
       await api.openExplorer(out);
     } catch (e) {
       setStatus(String(e));
     }
-  }, [doc, window_, vaultPath, targetProject, config, locale, mode]);
+  }, [doc, window_, vaultPath, targetProject, config, locale, mode, cellExtra]);
 
   /**
    * Copies the schedule as a PNG image (T-0725): the same export drawing the
@@ -732,6 +740,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
       today: toISO(new Date()),
       locale,
       mode,
+      cellExtra,
     });
     const result = await copySvgAsPng(svg, {
       rasterize: tStatic("schedule.view.rasterizeFailed"),
@@ -742,7 +751,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
         ? tStatic("schedule.view.imageCopied")
         : tStatic("schedule.view.imageCopyFailed", { error: result.error }),
     );
-  }, [doc, window_, locale, mode]);
+  }, [doc, window_, locale, mode, cellExtra]);
 
   /**
    * Keyboard editing: undo/redo, plus nudging the selected element.
@@ -1142,6 +1151,10 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
           </>
         )}
 
+        {mode === "calendar" && (
+          <CellHeightControl extra={cellExtra} onChange={changeCellExtra} disabled={!doc} />
+        )}
+
         {/* Range presets, and the sprint cadence, belong to the long-range
             reading only: at six weeks there is no sprint band to label and
             nothing to jump a quarter of. */}
@@ -1295,6 +1308,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
                 today={today}
                 selectedId={selected?.id ?? null}
                 readOnly={aiRunning}
+                cellExtra={cellExtra}
                 onMoveItem={(id, delta) =>
                   patchItem(id, (i) => ({
                     ...i,

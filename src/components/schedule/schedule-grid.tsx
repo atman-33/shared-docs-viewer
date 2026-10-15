@@ -58,6 +58,8 @@ const LANE_H = 22;
 /** Pointer travel that pans the window one week during a right-drag. Close to
  * a typical row's height, so the gesture feels like moving the sheet itself. */
 const PX_PER_WEEK = 96;
+/** Minimum height of a day cell on screen, in px (Tailwind's former `min-h-20`). */
+const CELL_MIN_H = 80;
 
 interface Props {
   doc: ScheduleDocModel;
@@ -74,6 +76,8 @@ interface Props {
   /** True while an AI edit is running: every gesture is disabled so an app
    * write cannot race the agent's. */
   readOnly?: boolean;
+  /** Extra px added to every day cell's minimum height (T-0822). */
+  cellExtra?: number;
   onMoveItem: (id: string, deltaDays: number) => void;
   onResizeItem: (id: string, edge: "start" | "end", deltaDays: number) => void;
   onSelectItem: (item: ScheduleItem | null) => void;
@@ -119,6 +123,7 @@ export function ScheduleGrid({
   today,
   selectedId,
   readOnly,
+  cellExtra = 0,
   onMoveItem,
   onResizeItem,
   onSelectItem,
@@ -347,8 +352,11 @@ export function ScheduleGrid({
                             active: true,
                           });
                         }}
+                        // A day cell's minimum height: 80px plus the user's extra
+                        // (T-0822). A minimum, so a week with many lanes still grows.
+                        style={{ minHeight: CELL_MIN_H + cellExtra }}
                         className={cn(
-                          "min-h-20 border-r border-border/60 px-1 pb-1 pt-0.5 last:border-r-0",
+                          "border-r border-border/60 px-1 pb-1 pt-0.5 last:border-r-0",
                           // Shading alone competed with the selection tint for
                           // the same visual channel; the ✕ below is what
                           // actually marks a day as non-working.

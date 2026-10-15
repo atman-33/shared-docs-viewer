@@ -106,4 +106,10 @@ export const scheduleJa: Partial<Record<MessageKey, string>> = {
   "schedule.view.copyImageHint": "画像としてコピー（Ctrl+V でどこにでも貼り付け）",
   "schedule.view.imageCopied": "画像をコピーしました。Ctrl+V で貼り付けてください",
   "schedule.view.imageCopyFailed": "画像のコピーに失敗しました: {error}",
+  "schedule.cellHeight.button": "セルの高さ",
+  "schedule.cellHeight.buttonActive": "セル +{px}px",
+  "schedule.cellHeight.hint":
+    "カレンダーの日セルを高くする（HTML エクスポートと画像コピーにも反映）",
+  "schedule.cellHeight.label": "日セルの高さ（追加分）",
+  "schedule.cellHeight.reset": "既定に戻す",
 };

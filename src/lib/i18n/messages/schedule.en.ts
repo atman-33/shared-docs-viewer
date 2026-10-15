@@ -104,4 +104,10 @@ export const scheduleEn = {
   "schedule.view.copyImageHint": "Copy as an image (paste anywhere with Ctrl+V)",
   "schedule.view.imageCopied": "Image copied — paste it with Ctrl+V",
   "schedule.view.imageCopyFailed": "Could not copy the image: {error}",
+  "schedule.cellHeight.button": "Cell height",
+  "schedule.cellHeight.buttonActive": "Cell +{px}px",
+  "schedule.cellHeight.hint":
+    "Make the calendar's day cells taller (also applies to the HTML export and the image copy)",
+  "schedule.cellHeight.label": "Day cell height (extra)",
+  "schedule.cellHeight.reset": "Reset to default",
 } as const;
