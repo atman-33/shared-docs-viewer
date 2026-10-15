@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.165.0 (2026-10-15)
+
+- **Copied agent prompts are now written in the Language setting** (T-0821). Only the `## Plan` / `## Results` clause followed Settings → Agents → Language; the rest of the instructions stayed English, and pasting them into Claude Code could make it answer in English too. The task prompt, tidy prompt, Claude Desktop chat prompt, diagram-edit prompt and the Projects tab prompts now each have a Japanese text for `ja` and fall back to English for any other value. Skill names, `## Plan`, commands and paths stay untranslated, and the Japanese clause keeps the scope limit that code, commit messages and repository documents are not affected.
+
+- **The schedule calendar's day-cell height can be adjusted** (T-0822). A toolbar popover in calendar mode (S / M / L presets, a slider and a reset) adds 0 to 240px to each surface's own minimum cell height, so the screen grid, the HTML export and the image copy all grow by the same amount and the default of 0 leaves them as before. A taller calendar reads better on screen, and an exported or copied tall one leaves room to write on afterwards. The setting is remembered per machine; the note format is untouched.
+
+- **Alt+Left / Alt+Right now move a mindmap node across the root and follow the side it is drawn on** (T-0820). A branch of the root could not be moved from the right column to the left from the keyboard, because outdent is refused for it. Alt+Left on a right-hand branch now sends it to the left and Alt+Right on a left-hand branch to the right, with its subtree and list position intact. For other nodes the arrow pointing away from the root indents and the one pointing back outdents, so indent stays reachable on the left-hand side; the node menu hints mirror as well.
+
 ## 0.164.0 (2026-10-14)
 
 - **A mindmap node's title can now be broken across lines** (T-0815). A long title stretched its box sideways, and the automatic wrap at the maximum box width could not be steered, so it cut a phrase wherever the width ran out. Press Shift+Enter while renaming a node (or Enter in the side panel's title field) to choose where a line ends. The note stores the break as `<br>`, so the node stays one line in the file and still reads as a break in Obsidian; `<br/>` and `<br />` are read too. Before, only a title's first line was written back, so a stray newline was silently dropped. The help screen and the vault-template mindmap rule describe the format; existing vaults pick up the rule on the next template update.
