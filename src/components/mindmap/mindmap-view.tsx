@@ -76,6 +76,7 @@ import {
   DEFAULT_ATTR_VIEW,
   findNode,
   findParent,
+  flipRootBranchSide,
   freezeRootChildSides,
   indentNode,
   moveNode,
@@ -83,6 +84,7 @@ import {
   nextNodeId,
   outdentNode,
   parseMindmap,
+  rootBranchSide,
   serializeMindmap,
   nextStickyId,
   stickiesOf,
@@ -1134,6 +1136,17 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
         // the tree's own directions here as well, so Alt+Right files a node
         // under its neighbour whichever side of the root it is drawn on.
         if (e.altKey) {
+          // A branch of the root is the exception: an arrow pointing across the
+          // root sends it to that side instead (T-0820).
+          const side = rootBranchSide(doc.roots, selectedId);
+          if (
+            (direction === "left" && side === "right") ||
+            (direction === "right" && side === "left")
+          ) {
+            const roots = flipRootBranchSide(doc.roots, selectedId, direction);
+            if (roots) mutate({ ...doc, roots });
+            return;
+          }
           structuralMove(
             selectedId,
             direction === "up"

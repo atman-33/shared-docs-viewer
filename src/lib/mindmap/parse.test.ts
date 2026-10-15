@@ -6,6 +6,7 @@ import {
   cloneNodes,
   findNode,
   findParent,
+  flipRootBranchSide,
   freezeRootChildSides,
   indentNode,
   moveNode,
@@ -14,6 +15,7 @@ import {
   nextNodeId,
   nextStickyId,
   parseMindmap,
+  rootBranchSide,
   rootChildSide,
   serializeMindmap,
   stickiesOf,
@@ -614,6 +616,58 @@ describe("indent and outdent", () => {
     expect(outdentNode(build(), "N-001")).toBeNull();
     expect(canOutdent(build(), "N-002")).toBe(false);
     expect(canOutdent(build(), "N-003")).toBe(true);
+  });
+});
+
+describe("flipping a root branch across the root (T-0820)", () => {
+  const build = () =>
+    parseMindmap(
+      note(
+        [
+          "- N-001 root",
+          "  - N-002 a ^right",
+          "    - N-003 a1",
+          "  - N-004 b",
+          "  - N-005 c",
+        ].join("\n"),
+      ),
+    ).roots;
+
+  it("moves a right-hand branch to the left, subtree and place intact", () => {
+    const moved = flipRootBranchSide(build(), "N-002", "left")!;
+    expect(findNode(moved, "N-002")!.side).toBe("left");
+    expect(moved[0].children.map((n) => n.id)).toEqual(["N-002", "N-004", "N-005"]);
+    expect(findNode(moved, "N-002")!.children.map((n) => n.id)).toEqual(["N-003"]);
+  });
+
+  it("leaves the other branches in the columns they were drawn in", () => {
+    const roots = build();
+    const before = roots[0].children.map((n, i) => rootChildSide(n, i));
+    const moved = flipRootBranchSide(roots, "N-002", "left")!;
+    const after = moved[0].children.map((n, i) => rootChildSide(n, i));
+    expect(after).toEqual(["left", before[1], before[2]]);
+  });
+
+  it("refuses when the branch is already on that side", () => {
+    expect(flipRootBranchSide(build(), "N-002", "right")).toBeNull();
+  });
+
+  it("refuses for a node that is not a branch of a root", () => {
+    expect(flipRootBranchSide(build(), "N-003", "left")).toBeNull();
+    expect(flipRootBranchSide(build(), "N-001", "left")).toBeNull();
+  });
+
+  it("reports the drawn side of a branch, and none for anything else", () => {
+    expect(rootBranchSide(build(), "N-002")).toBe("right");
+    expect(rootBranchSide(build(), "N-004")).toBe("left");
+    expect(rootBranchSide(build(), "N-003")).toBeNull();
+  });
+
+  it("does not touch the tree it was given", () => {
+    const roots = build();
+    const before = JSON.stringify(roots);
+    flipRootBranchSide(roots, "N-002", "left");
+    expect(JSON.stringify(roots)).toBe(before);
   });
 });
 
