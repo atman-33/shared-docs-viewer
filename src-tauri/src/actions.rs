@@ -346,30 +346,57 @@ fn agent_prompt_clauses(params: &LaunchAgentForTaskParams<'_>, multiline: bool) 
     // function — double quotes would collide with the outer prompt quoting
     // in `agent_command_template` (see `quoted_prompt` there).
     let language_name = language_name(params.language);
+    // Every instruction is written in the Settings language (T-0821): an
+    // English prompt pasted into Claude Code made it answer in English too,
+    // so the instruction text has to carry the language it should reply in.
+    // Identifiers (skill names, `## Plan`, paths) are never translated.
+    let ja = is_ja(params.language);
     // In confirm mode the plan-first instructions are their own clauses rather
     // than a tail on the first one, so a multiline copy breaks them apart the
     // same way it breaks apart everything else.
-    let execution = if params.confirm {
-        ""
-    } else {
-        ", then complete it automatically without asking for confirmation"
+    let execution = match (params.confirm, ja) {
+        (true, _) => "",
+        (false, true) => "し、確認を求めずに自動で最後まで進めてください",
+        (false, false) => ", then complete it automatically without asking for confirmation",
     };
-    let mut clauses = vec![format!(
-        "Please implement task {}. First run the task-start skill{execution}.",
-        params.task_id
-    )];
+    let mut clauses = vec![if ja {
+        format!(
+            "タスク {} を実装してください。まず task-start スキルを実行{execution}。",
+            params.task_id
+        )
+    } else {
+        format!(
+            "Please implement task {}. First run the task-start skill{execution}.",
+            params.task_id
+        )
+    }];
     if params.confirm {
-        clauses.push(
-            "Before changing anything, tell the user what you make of the request, including a better approach if you see one."
-                .to_string(),
-        );
-        clauses.push(format!(
-            "Then draft an implementation plan in {language_name}, present the full plan in your chat response to the user, and ask them to approve it; do not implement anything, nor write to any files, until they reply with approval."
-        ));
-        clauses.push(
-            "Once approved, write the plan into the task file's `## Plan` section before making any code changes."
-                .to_string(),
-        );
+        if ja {
+            clauses.push(
+                "何かを変更する前に、この依頼をどう捉えたかをユーザーに伝えてください。より良い方法があればそれも含めてください。"
+                    .to_string(),
+            );
+            clauses.push(
+                "そのうえで実装計画を日本語で作成し、計画の全文をチャットでユーザーに提示して承認を求めてください。ユーザーが承認するまでは、実装も、ファイルへの書き込みも行わないでください。"
+                    .to_string(),
+            );
+            clauses.push(
+                "承認されたら、コードを変更する前に、計画をタスクファイルの `## Plan` セクションに書き込んでください。"
+                    .to_string(),
+            );
+        } else {
+            clauses.push(
+                "Before changing anything, tell the user what you make of the request, including a better approach if you see one."
+                    .to_string(),
+            );
+            clauses.push(format!(
+                "Then draft an implementation plan in {language_name}, present the full plan in your chat response to the user, and ask them to approve it; do not implement anything, nor write to any files, until they reply with approval."
+            ));
+            clauses.push(
+                "Once approved, write the plan into the task file's `## Plan` section before making any code changes."
+                    .to_string(),
+            );
+        }
     }
     // Worktree clause: only when the task opts into git worktree mode (T-0017).
     // The agent session starts in the vault; task-start resolves the repo and
@@ -384,40 +411,80 @@ fn agent_prompt_clauses(params: &LaunchAgentForTaskParams<'_>, multiline: bool) 
         let base = if root.is_empty() {
             // No root configured: fall back to the layout relative to the
             // repository, which is the one place the agent can always resolve.
-            "`.worktrees`, beside the repository".to_string()
+            if ja {
+                "リポジトリの隣の `.worktrees`".to_string()
+            } else {
+                "`.worktrees`, beside the repository".to_string()
+            }
         } else {
             format!("`{root}`")
         };
-        let path = if root.is_empty() {
-            format!("`.worktrees/{}/<repository-name>`", params.task_id)
+        let repo_name = if ja {
+            "<リポジトリ名>"
         } else {
-            format!("`{root}/{}/<repository-name>`", params.task_id)
+            "<repository-name>"
         };
-        clauses.push(format!(
-            "This task uses git worktree mode. In task-start, do not modify the repository's working tree directly; instead create a new worktree with `git worktree add` at {path} (branch `task/{0}`) and work there. Worktrees live under {base}. For multiple repositories, create each repository's worktree side by side under the same `{0}` folder.",
-            params.task_id
-        ));
+        let path = if root.is_empty() {
+            format!("`.worktrees/{}/{repo_name}`", params.task_id)
+        } else {
+            format!("`{root}/{}/{repo_name}`", params.task_id)
+        };
+        clauses.push(if ja {
+            format!(
+                "このタスクは git worktree モードです。task-start では、リポジトリの作業ツリーを直接変更せず、`git worktree add` で {path}（ブランチ `task/{0}`）に新しい worktree を作り、そこで作業してください。worktree は {base} の下に置きます。複数のリポジトリがある場合は、各リポジトリの worktree を同じ `{0}` フォルダの下に並べて作ってください。",
+                params.task_id
+            )
+        } else {
+            format!(
+                "This task uses git worktree mode. In task-start, do not modify the repository's working tree directly; instead create a new worktree with `git worktree add` at {path} (branch `task/{0}`) and work there. Worktrees live under {base}. For multiple repositories, create each repository's worktree side by side under the same `{0}` folder.",
+                params.task_id
+            )
+        });
     }
-    clauses.push("When finished, run the task-report skill to update the status.".to_string());
+    clauses.push(
+        if ja {
+            "作業が終わったら、task-report スキルを実行してステータスを更新してください。"
+        } else {
+            "When finished, run the task-report skill to update the status."
+        }
+        .to_string(),
+    );
     if !params.project.trim().is_empty() {
-        clauses.push(format!("Target project: {}.", params.project));
+        clauses.push(if ja {
+            format!("対象プロジェクト: {}。", params.project)
+        } else {
+            format!("Target project: {}.", params.project)
+        });
     }
     // Plan clause (T-0057): applies regardless of confirm mode, because the
     // resume/handoff case — a plan approved in an earlier session, executed
     // later, possibly by a different agent CLI — is exactly when `confirm` is
     // no longer meaningful.
     clauses.push(
-        "If the task file's `## Plan` section is already non-empty, treat it as the approved implementation plan: follow it rather than re-planning, and ask before deviating from it."
-            .to_string(),
+        if ja {
+            "タスクファイルの `## Plan` セクションがすでに書かれている場合は、承認済みの実装計画として扱ってください。計画を立て直さずにそれに従い、外れるときは先に確認してください。"
+        } else {
+            "If the task file's `## Plan` section is already non-empty, treat it as the approved implementation plan: follow it rather than re-planning, and ask before deviating from it."
+        }
+        .to_string(),
     );
     // Language clause (T-0057): scoped strictly to the task file's `## Plan`
     // and `## Results` sections. Deliberately does not say "write in
     // <language>" unqualified, so an agent cannot over-apply it to code,
     // comments, commit messages, PR text, or repository documentation.
-    clauses.push(format!(
-        "Write the task file's `## Plan` and `## Results` sections in {language_name}. This applies only to those two sections of the task file — never change the language of code, code comments, commit messages, PR titles/bodies, or other repository documentation."
-    ));
-    clauses.push(format!("Task file: {}", params.task_file));
+    clauses.push(if ja {
+        "タスクファイルの `## Plan` と `## Results` セクションは日本語で書いてください。これはタスクファイルのその 2 セクションだけに適用します。コード、コードコメント、コミットメッセージ、PR のタイトルと本文、その他のリポジトリのドキュメントの言語は変えないでください。"
+            .to_string()
+    } else {
+        format!(
+            "Write the task file's `## Plan` and `## Results` sections in {language_name}. This applies only to those two sections of the task file — never change the language of code, code comments, commit messages, PR titles/bodies, or other repository documentation."
+        )
+    });
+    clauses.push(if ja {
+        format!("タスクファイル: {}", params.task_file)
+    } else {
+        format!("Task file: {}", params.task_file)
+    });
     // Custom clause (T-0078): free-form instructions the user configured once
     // in Settings, appended verbatim to every task's prompt. Appended last, so
     // it reads as the user's own addition rather than splitting the fixed
@@ -499,6 +566,16 @@ pub fn build_tidy_prompt(stale_days: u32, exclude: &[String], language: &str) ->
     // Language setting. Scoped to the human-facing prose only —
     // frontmatter values, naming conventions, the pending list and the KB log
     // stay English so they remain greppable and convention-consistent.
+    if is_ja(language) {
+        return format!(
+            "vault の整理を、非対話で無人実行してください。\
+手順 1: kb-ingest スキルを無人モードで実行します — `/kb-ingest --unattended --stale-days {stale_days}{exclude_arg}`。\
+迷わず安全に振り分けられるものだけを処理し、人の判断が要るもの（新規フォルダ、リネーム、確信度が低いもの）はその場に残して、kb-ingest の保留フローに回します。つまり `_ai/state/tidy-pending.json` に記録し、ボード上の `#tidy-review` タスクを 1 つだけ作成または更新して、人が提案を確認できるようにします。\
+手順 2: アーカイブゾーンの kb-index スキルを実行します — `/kb-index --zone tasks-archive`。\
+手順 3: 自動で振り分けた件数、レビュー待ちに残した件数（レビュータスクの ID があればそれも）、アーカイブの索引が変わったかどうかを書いた要約を 1 行、`_ai/logs/kb-log.md` に追記します。\
+途中で確認を求めないでください。作成または更新するタスクファイルのタイトルと `## Description` は日本語で書いてください。対象はその部分だけで、frontmatter の値、フォルダとファイルの命名規則、`_ai/state/tidy-pending.json`、`_ai/logs/kb-log.md` の記録は英語のままにします。"
+        );
+    }
     let language_note = format!(
         " Write the title and `## Description` of any task file you create or update in {}. That applies to those parts only — frontmatter values, folder and file naming conventions, `_ai/state/tidy-pending.json`, and the `_ai/logs/kb-log.md` entries stay in English.",
         language_name(language)
@@ -516,10 +593,17 @@ Do not ask for confirmation at any point.{language_note}"
 /// Maps a `language` setting code to the language name used in prompts.
 /// Unrecognized values fall back to English.
 fn language_name(code: &str) -> &'static str {
-    match code {
-        "ja" => "Japanese",
-        _ => "English",
+    if is_ja(code) {
+        "Japanese"
+    } else {
+        "English"
     }
+}
+
+/// Whether prompts are written in Japanese. Anything but `ja` is English,
+/// so a prompt never ends up in a language the builders have no text for.
+pub fn is_ja(code: &str) -> bool {
+    code == "ja"
 }
 
 /// Extracts the bare agent executable from a configured command template by
@@ -804,6 +888,7 @@ pub fn build_desktop_chat_prompt(
     task_title: &str,
     task_file: &str,
     description: &str,
+    language: &str,
 ) -> String {
     let body = description.trim();
     let body_block = if body.is_empty() {
@@ -811,6 +896,11 @@ pub fn build_desktop_chat_prompt(
     } else {
         format!("\n\n{body}")
     };
+    if is_ja(language) {
+        return format!(
+            "タスク {task_id} — {task_title} について相談したいです。{body_block}\n\nタスクファイル: {task_file}"
+        );
+    }
     format!(
         "I'd like to discuss task {task_id} — {task_title}.{body_block}\n\nTask file: {task_file}"
     )
@@ -837,6 +927,7 @@ pub fn send_task_to_claude_desktop(
             params.task_title,
             params.task_file,
             description,
+            params.language,
         )
     } else {
         build_agent_prompt(params)
@@ -1064,7 +1155,7 @@ mod tests {
             use_herdr: false,
             herdr_cmd: "",
             terminal_embed: false,
-            language: "ja",
+            language: "en",
             custom_prompt: "",
         };
         let prompt = build_agent_prompt(&params);
@@ -1095,7 +1186,7 @@ mod tests {
             use_herdr: false,
             herdr_cmd: "",
             terminal_embed: false,
-            language: "ja",
+            language: "en",
             custom_prompt: "",
         };
         let prompt = build_agent_prompt(&params);
@@ -1105,7 +1196,8 @@ mod tests {
 
     #[test]
     fn desktop_chat_prompt_carries_the_description_and_file() {
-        let prompt = build_desktop_chat_prompt("T-1", "title", "tasks/T-1.md", "  Do the thing.  ");
+        let prompt =
+            build_desktop_chat_prompt("T-1", "title", "tasks/T-1.md", "  Do the thing.  ", "en");
         assert_eq!(
             prompt,
             "I'd like to discuss task T-1 — title.\n\nDo the thing.\n\nTask file: tasks/T-1.md"
@@ -1114,7 +1206,7 @@ mod tests {
 
     #[test]
     fn desktop_chat_prompt_omits_an_empty_description() {
-        let prompt = build_desktop_chat_prompt("T-1", "title", "tasks/T-1.md", "\n  \n");
+        let prompt = build_desktop_chat_prompt("T-1", "title", "tasks/T-1.md", "\n  \n", "en");
         assert_eq!(
             prompt,
             "I'd like to discuss task T-1 — title.\n\nTask file: tasks/T-1.md"
@@ -1213,7 +1305,8 @@ mod tests {
         params.confirm = true;
         params.language = "ja";
         let prompt = build_agent_prompt(&params);
-        assert!(prompt.contains("draft an implementation plan in Japanese"));
+        assert!(prompt.contains("実装計画を日本語で作成し"));
+        assert!(!prompt.contains("draft an implementation plan"));
     }
 
     #[test]
@@ -1314,8 +1407,66 @@ mod tests {
         let mut params = test_params("claude-code", "");
         params.language = "ja";
         let prompt = build_agent_prompt(&params);
-        assert!(prompt
-            .contains("Write the task file's `## Plan` and `## Results` sections in Japanese."));
+        assert!(prompt.contains("`## Plan` と `## Results` セクションは日本語で書いてください"));
+        // The scope limit survives translation: code and repository text stay as they are.
+        assert!(prompt.contains("コード、コードコメント、コミットメッセージ"));
+    }
+
+    #[test]
+    fn japanese_prompt_is_written_in_japanese_and_keeps_identifiers() {
+        let mut params = test_params("claude-code", "");
+        params.language = "ja";
+        params.project = "workhub";
+        let prompt = build_agent_prompt(&params);
+        assert!(prompt.starts_with("タスク T-1 を実装してください。まず task-start スキルを実行"));
+        assert!(prompt.contains("確認を求めずに自動で最後まで進めてください"));
+        assert!(prompt.contains("task-report スキルを実行"));
+        assert!(prompt.contains("対象プロジェクト: workhub。"));
+        assert!(prompt.ends_with("タスクファイル: tasks/T-1.md"));
+        // No English instruction text is left over.
+        for english in [
+            "Please implement",
+            "When finished",
+            "Target project",
+            "Task file:",
+        ] {
+            assert!(!prompt.contains(english), "{english} leaked into: {prompt}");
+        }
+    }
+
+    #[test]
+    fn japanese_prompt_covers_confirm_and_worktree_modes() {
+        let mut params = test_params("claude-code", "");
+        params.language = "ja";
+        params.confirm = true;
+        params.worktree = true;
+        let prompt = build_agent_prompt_multiline(&params);
+        assert!(prompt.contains("承認を求めてください"));
+        assert!(prompt.contains("計画をタスクファイルの `## Plan` セクションに書き込んでください"));
+        assert!(prompt.contains("このタスクは git worktree モードです"));
+        assert!(prompt.contains("C:/repos/.worktrees/T-1/<リポジトリ名>"));
+        assert!(!prompt.contains("This task uses"));
+        // One instruction per line, as in English.
+        assert!(prompt.lines().count() > 5);
+    }
+
+    #[test]
+    fn unknown_language_prompt_is_english_in_every_mode() {
+        let mut params = test_params("claude-code", "");
+        params.language = "fr";
+        params.confirm = true;
+        let prompt = build_agent_prompt(&params);
+        assert!(prompt.starts_with("Please implement task T-1."));
+        assert!(prompt.contains("draft an implementation plan in English"));
+    }
+
+    #[test]
+    fn desktop_chat_prompt_is_japanese_when_set() {
+        let prompt = build_desktop_chat_prompt("T-1", "title", "tasks/T-1.md", "Do it.", "ja");
+        assert_eq!(
+            prompt,
+            "タスク T-1 — title について相談したいです。\n\nDo it.\n\nタスクファイル: tasks/T-1.md"
+        );
     }
 
     #[test]
@@ -1548,11 +1699,11 @@ opencode-go/kimi-k2.7-code
     #[test]
     fn tidy_prompt_language_clause_says_japanese_when_set() {
         let prompt = build_tidy_prompt(7, &[], "ja");
-        assert!(prompt.contains(
-            "Write the title and `## Description` of any task file you create or update in Japanese."
-        ));
+        assert!(prompt.contains("`## Description` は日本語で書いてください"));
+        assert!(prompt.contains("/kb-ingest --unattended --stale-days 7"));
         // Scoped: the machine-readable artifacts stay English.
-        assert!(prompt.contains("`_ai/logs/kb-log.md` entries stay in English"));
+        assert!(prompt.contains("の記録は英語のままにします"));
+        assert!(!prompt.contains("Perform unattended"));
     }
 
     #[test]

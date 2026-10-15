@@ -68,7 +68,7 @@ export function issueLabel(issue: VaultProjectIssue): string {
  * may be deliberate — and an agent told only "fix these" answers with empty
  * scaffold folders and deleted notes.
  */
-export function buildProjectFixPrompt(project: VaultProject): string {
+export function buildProjectFixPrompt(project: VaultProject, language = "en"): string {
   if (project.issues.length === 0) return "";
   const findings = project.issues
     .map((i) => `- [${i.severity}] ${i.kind}: ${i.target} — ${issueLabel(i)}`)
@@ -76,6 +76,51 @@ export function buildProjectFixPrompt(project: VaultProject): string {
   const location = project.archived
     ? `${project.path} (this project is archived, under archive/projects/)`
     : project.path;
+  if (language === "ja") {
+    const where = project.archived
+      ? `${project.path}（このプロジェクトはアーカイブ済みで、archive/projects/ の下にあります）`
+      : project.path;
+    return `vault のプロジェクト "${project.slug}" のレイアウトの指摘を直してください。
+
+プロジェクトフォルダ: ${where}
+
+変更する前に、vault の ".claude/rules/projects.md" を読んでください。
+指摘はこの定義を基準に出ています。
+
+workhub の Projects タブが報告した指摘:
+
+${findings}
+
+扱い方:
+
+- ファイルやフォルダは決して削除しないでください。移動・作成・追記だけにします。
+  削除しないと解消できない指摘は、そのままにして、そう報告してください。
+- warn の指摘は本物の欠落です。直してください。README.md や _index.md が無いと、
+  「まず README を読め」と言われたエージェントが読むものを失います。
+- info の指摘は判断が要るもので、チェックリストではありません。フォルダ欠落の
+  指摘を消すためだけに空フォルダを作らないでください。未知のフォルダは、中身が
+  文書化されたレイアウトのどこかに明らかに属する場合を除き、そのままにしてください。
+- loose-task-note は、そのタスクが属していたバックログ項目（backlog/B-NNN-x/）に
+  ノートを移し、項目の NNN- の連番に合わせてリネームして、元のファイル名（拡張子なし）を
+  frontmatter の alias に追加してください:
+
+      aliases:
+        - <NNN- を付ける前の名前>
+
+  リネームすると、旧名を指す [[wikilink]]（アーカイブ済みタスク内のものを含む）が
+  すべて切れますが、alias があれば 1 つも編集せずに直ります。そのうえで、対応する
+  タスクの ## Results セクションのリンクを更新してください。合う項目が無い場合は、
+  項目を作ってしまわずに、そう報告してノートはそのままにしてください。
+- backlog-entry-missing は、項目フォルダの中に、フォルダと同じ名前の入口ノート
+  （backlog/B-NNN-x/B-NNN-x.md）を templates/project/backlog/ をもとに追加し、
+  フォルダにすでにあるものを ## Notes と ## Status にまとめてください。
+  代わりにフォルダ名を変えてはいけません。
+- 新しい README.md、_index.md などの雛形ファイルは、templates/project/ をもとに、
+  フォルダの中身から埋めてください。テンプレートのプレースホルダを残さないでください。
+- 変更したことと、あえてそのままにしたことを報告してください。
+
+終わったら /kb-index を実行して、プロジェクトの索引をフォルダに合わせてください。`;
+  }
   return `Fix the layout findings for the vault project "${project.slug}".
 
 Project folder: ${location}
@@ -153,7 +198,39 @@ export function isSurveyStale(surveyed: string, now: Date): boolean {
  * cannot know is *which* place the owner means, and an agent told to go and
  * find one would end up opening a share it has no business in.
  */
-export function buildSharedSpaceSurveyPrompt(project: VaultProject): string {
+export function buildSharedSpaceSurveyPrompt(project: VaultProject, language = "en"): string {
+  if (language === "ja") {
+    const recorded = project.shared.length
+      ? `\n\nこのプロジェクトにはすでに次が記録されています。重複させず、同じ場所なら\n既存のものを更新してください:\n\n${project.shared
+          .map((s) => `- ${s.title} — ${s.location || "場所の記録なし"}（${s.direction}）`)
+          .join("\n")}`
+      : "";
+    return `チームの共有スペースを調べて、vault のプロジェクト "${project.slug}" に記録してください。
+
+プロジェクトフォルダ: ${project.path}
+
+調べる共有スペース: <ここにパスまたは URL を貼る>
+アクセス方法: <アクセスのメモを貼る — マップしたドライブ、VPN、アカウントなど>
+ファイルを置いてよいか: <read-only | export-ok>${recorded}
+
+shared-space スキルを survey モードで実行してください。使えない場合は、vault の
+".claude/rules/shared-space.md" に手で従ってください。
+
+大事なこと:
+
+- その場所の「ルール」を記録してください — 命名規則、どの種類の文書をどこに置くか、
+  誰が何を持つか。フォルダツリーは数週間で古くなるので、構造は読み手の
+  道しるべになる部分だけにしてください。
+- すべてのルールに、その場所の文書に書いてあれば (stated)、既存のファイルから
+  読み取ったなら (inferred) を付けてください。推測をルールとして書かないでください。
+- 実際にその場所を開けない場合は、そこで止まって、読めるパスを尋ねてください。
+  もっともらしい作り話の規則だらけのノートは、ノートが無いより悪いです。
+- 調査中は、direction に何と書いてあっても、共有スペース自体には何も書き込まないでください。
+- 上の回答で別の指定がない限り、direction は read-only にしてください。
+
+${project.path}/shared/<name>.md として保存し、プロジェクトの README.md からリンクして、
+/kb-index を実行してください。`;
+  }
   const existing = project.shared.length
     ? `\n\nAlready recorded for this project — do not duplicate these; update one\ninstead when it is the same place:\n\n${project.shared
         .map((s) => `- ${s.title} — ${s.location || "no location recorded"} (${s.direction})`)

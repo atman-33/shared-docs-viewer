@@ -937,7 +937,7 @@ export function ProjectsView({
                   <CopyPromptButton
                     showLabel
                     label={t("projects.view.copySurveyPrompt")}
-                    onCopy={() => writeText(buildSharedSpaceSurveyPrompt(current))}
+                    onCopy={() => writeText(buildSharedSpaceSurveyPrompt(current, config?.settings.language))}
                   />
                 </div>
                 {current.shared.length === 0 ? (
@@ -1060,7 +1060,7 @@ export function ProjectsView({
                     <CopyPromptButton
                       showLabel
                       label={t("projects.view.copyFixPrompt")}
-                      onCopy={() => writeText(buildProjectFixPrompt(current))}
+                      onCopy={() => writeText(buildProjectFixPrompt(current, config?.settings.language))}
                     />
                   )}
                 </div>
