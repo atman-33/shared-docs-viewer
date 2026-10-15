@@ -1007,6 +1007,20 @@ export function flipRootBranchSide(
   return next;
 }
 
+/**
+ * The side of the root a node is drawn on — its own for a branch of a root,
+ * its branch's for anything deeper — or `null` for a top-level root.
+ */
+export function drawnSide(roots: MindmapNode[], id: string): "left" | "right" | null {
+  let current = id;
+  for (;;) {
+    const parent = findParent(roots, current);
+    if (!parent) return null;
+    if (roots.includes(parent)) return rootBranchSide(roots, current);
+    current = parent.id;
+  }
+}
+
 /** The side a branch of a root is drawn on, or `null` for any other node. */
 export function rootBranchSide(roots: MindmapNode[], id: string): "left" | "right" | null {
   const parent = findParent(roots, id);

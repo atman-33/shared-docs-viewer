@@ -74,6 +74,7 @@ import {
   canOutdent,
   cloneNodes,
   DEFAULT_ATTR_VIEW,
+  drawnSide,
   findNode,
   findParent,
   flipRootBranchSide,
@@ -1132,31 +1133,25 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
           | "down"
           | "left"
           | "right";
-        // Alt moves the node, a bare arrow moves the cursor. Left/right are
-        // the tree's own directions here as well, so Alt+Right files a node
-        // under its neighbour whichever side of the root it is drawn on.
+        // Alt moves the node, a bare arrow moves the cursor. Left/right follow
+        // the side a node is drawn on (T-0820): the arrow pointing away from the
+        // root files it deeper (indent), the one pointing back lifts it out
+        // (outdent) — or, for a branch of the root, sends it across to the other
+        // side. A top-level root has no side, so it keeps right = indent.
         if (e.altKey) {
-          // A branch of the root is the exception: an arrow pointing across the
-          // root sends it to that side instead (T-0820).
-          const side = rootBranchSide(doc.roots, selectedId);
-          if (
-            (direction === "left" && side === "right") ||
-            (direction === "right" && side === "left")
-          ) {
-            const roots = flipRootBranchSide(doc.roots, selectedId, direction);
-            if (roots) mutate({ ...doc, roots });
+          if (direction === "up" || direction === "down") {
+            structuralMove(selectedId, direction === "up" ? "moveUp" : "moveDown");
             return;
           }
-          structuralMove(
-            selectedId,
-            direction === "up"
-              ? "moveUp"
-              : direction === "down"
-                ? "moveDown"
-                : direction === "right"
-                  ? "indent"
-                  : "outdent",
-          );
+          const side = drawnSide(doc.roots, selectedId) ?? "right";
+          if (direction === side) {
+            structuralMove(selectedId, "indent");
+          } else if (rootBranchSide(doc.roots, selectedId)) {
+            const roots = flipRootBranchSide(doc.roots, selectedId, direction);
+            if (roots) mutate({ ...doc, roots });
+          } else {
+            structuralMove(selectedId, "outdent");
+          }
           return;
         }
         navigate(direction);

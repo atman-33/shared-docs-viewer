@@ -4,6 +4,7 @@ import {
   canMoveSibling,
   canOutdent,
   cloneNodes,
+  drawnSide,
   findNode,
   findParent,
   flipRootBranchSide,
@@ -668,6 +669,37 @@ describe("flipping a root branch across the root (T-0820)", () => {
     const before = JSON.stringify(roots);
     flipRootBranchSide(roots, "N-002", "left");
     expect(JSON.stringify(roots)).toBe(before);
+  });
+});
+
+describe("drawn side of a node (T-0820)", () => {
+  const roots = parseMindmap(
+    note(
+      [
+        "- N-001 root",
+        "  - N-002 a ^right",
+        "    - N-003 a1",
+        "  - N-004 b ^left",
+        "    - N-005 b1",
+        "      - N-006 b1x",
+      ].join("\n"),
+    ),
+  ).roots;
+
+  it("is the branch's own side for a branch of the root", () => {
+    expect(drawnSide(roots, "N-002")).toBe("right");
+    expect(drawnSide(roots, "N-004")).toBe("left");
+  });
+
+  it("is the branch's side for anything deeper", () => {
+    expect(drawnSide(roots, "N-003")).toBe("right");
+    expect(drawnSide(roots, "N-005")).toBe("left");
+    expect(drawnSide(roots, "N-006")).toBe("left");
+  });
+
+  it("is null for a top-level root and an unknown id", () => {
+    expect(drawnSide(roots, "N-001")).toBeNull();
+    expect(drawnSide(roots, "N-999")).toBeNull();
   });
 });
 
