@@ -22,7 +22,7 @@
 //! shared procedure (ids are never renumbered, `## Memo` is never touched). This
 //! module only tells it which file and what to do.
 
-use crate::actions;
+use crate::actions::{self, is_ja};
 use crate::diagram;
 use crate::models::Config;
 use crate::storage;
@@ -152,8 +152,17 @@ fn resolve_vault(cfg: &Config) -> Option<PathBuf> {
 /// restating its rules: the notation, the id-preservation requirement and the
 /// "never touch `## Memo`" rule live in the skill, and duplicating them here
 /// would give the agent two sources to reconcile when they drift.
-fn build_prompt(path: &str, instruction: &str, confirm: bool) -> String {
-    let mode = mode_line(confirm);
+fn build_prompt(path: &str, instruction: &str, confirm: bool, language: &str) -> String {
+    let mode = mode_line(confirm, language);
+    if is_ja(language) {
+        return format!(
+            "`diagram-edit` スキルを使って、この workhub の図解ノートを編集してください。\n\n\
+図解ファイル: {path}\n\n\
+指示:\n{instruction}\n\n\
+{mode}\n\n\
+変更した内容（または変更する内容）を、触った要素の id を挙げて 1 段落で報告してください。他のファイルは変更しないでください。\n"
+        );
+    }
     format!(
         "Use the `diagram-edit` skill to edit this workhub diagram note.\n\n\
 Diagram file: {path}\n\n\
@@ -164,11 +173,12 @@ element ids you touched. Do not modify any other file.\n"
     )
 }
 
-fn mode_line(confirm: bool) -> &'static str {
-    if confirm {
-        "Do NOT write the file. Report the exact lines you would change, as a diff, and stop."
-    } else {
-        "Apply the change to the file."
+fn mode_line(confirm: bool, language: &str) -> &'static str {
+    match (confirm, is_ja(language)) {
+        (true, true) => "ファイルには書き込まないでください。変更する行をそのまま diff で報告して、そこで止まってください。",
+        (true, false) => "Do NOT write the file. Report the exact lines you would change, as a diff, and stop.",
+        (false, true) => "変更をファイルに適用してください。",
+        (false, false) => "Apply the change to the file.",
     }
 }
 
@@ -176,8 +186,23 @@ fn mode_line(confirm: bool) -> &'static str {
 /// the like) by hand. `instruction` is whatever the panel holds: when it is
 /// empty the owner will give instructions in the following messages, so the
 /// prompt says to wait instead of editing on its own.
-pub fn build_copy_prompt(path: &str, instruction: &str, confirm: bool) -> String {
+pub fn build_copy_prompt(path: &str, instruction: &str, confirm: bool, language: &str) -> String {
     let instruction = instruction.trim();
+    if is_ja(language) {
+        let request = if instruction.is_empty() {
+            "指示はこのあとのメッセージで伝えます。それまでは何も編集しないでください。".to_string()
+        } else {
+            format!("指示:\n{instruction}")
+        };
+        return format!(
+            "`diagram-edit` スキルを使って、この workhub の図解ノートを編集してください。\n\n\
+図解ファイル: {path}\n\n\
+{request}\n\n\
+{mode}\n\n\
+変更のたびに、変更した内容（または変更する内容）を、触った要素の id を挙げて 1 文で要約してください。他のファイルは変更しないでください。\n",
+            mode = mode_line(confirm, language)
+        );
+    }
     let request = if instruction.is_empty() {
         "I will give you the instructions in the following messages. \
 Do not edit anything until I do."
@@ -192,7 +217,7 @@ Diagram file: {path}\n\n\
 {mode}\n\n\
 After each change, summarize in a sentence what changed (or would change), \
 naming the element ids you touched. Do not modify any other file.\n",
-        mode = mode_line(confirm)
+        mode = mode_line(confirm, language)
     )
 }
 
@@ -241,7 +266,12 @@ pub fn run(
         return Err("could not resolve the agent command".into());
     }
 
-    let prompt = build_prompt(&target.to_string_lossy(), &instruction, confirm);
+    let prompt = build_prompt(
+        &target.to_string_lossy(),
+        &instruction,
+        confirm,
+        &cfg.settings.language,
+    );
     let mut command = build_command(&argv);
     command.current_dir(&vault);
     command.stdin(Stdio::piped());
@@ -439,7 +469,12 @@ mod tests {
 
     #[test]
     fn prompt_names_the_skill_and_the_mode() {
-        let apply = build_prompt("C:/v/projects/p/diagrams/a.md", "shift the boxes", false);
+        let apply = build_prompt(
+            "C:/v/projects/p/diagrams/a.md",
+            "shift the boxes",
+            false,
+            "en",
+        );
         assert!(apply.contains("`diagram-edit` skill"));
         assert!(apply.contains("C:/v/projects/p/diagrams/a.md"));
         assert!(apply.contains("shift the boxes"));
@@ -448,7 +483,7 @@ mod tests {
         assert!(!apply.contains("schedule-edit"));
         assert!(!apply.contains("mindmap-edit"));
 
-        let dry = build_prompt("x.md", "shift", true);
+        let dry = build_prompt("x.md", "shift", true, "en");
         assert!(dry.contains("Do NOT write the file"));
         assert!(!dry.contains("Apply the change"));
     }
@@ -456,10 +491,10 @@ mod tests {
     #[test]
     fn prompt_does_not_depend_on_the_kind() {
         // The same text for every kind: the skill reads `type` from the file.
-        let a = build_prompt("a.md", "do it", false);
+        let a = build_prompt("a.md", "do it", false, "en");
         for kind in diagram::KINDS {
             let path = format!("C:/v/projects/p/{kind}/a.md");
-            let p = build_prompt(&path, "do it", false);
+            let p = build_prompt(&path, "do it", false, "en");
             assert_eq!(p.replace(&path, "a.md"), a);
         }
     }
@@ -471,6 +506,7 @@ mod tests {
             "  shift by a week 
 ",
             false,
+            "en",
         );
         assert!(with.contains("`diagram-edit` skill"));
         assert!(with.contains("C:/v/a.md"));
@@ -480,10 +516,28 @@ shift by a week"
         ));
         assert!(with.contains("Apply the change"));
 
-        let without = build_copy_prompt("C:/v/a.md", "   ", true);
+        let without = build_copy_prompt("C:/v/a.md", "   ", true, "en");
         assert!(!without.contains("Instruction:"));
         assert!(without.contains("Do not edit anything until I do"));
         assert!(without.contains("Do NOT write the file"));
+    }
+
+    #[test]
+    fn prompts_are_japanese_when_the_language_is_ja() {
+        let apply = build_prompt("C:/v/a.md", "shift the boxes", false, "ja");
+        assert!(apply.contains("`diagram-edit` スキル"));
+        assert!(apply.contains("C:/v/a.md"));
+        assert!(apply.contains("shift the boxes"));
+        assert!(apply.contains("変更をファイルに適用してください"));
+        assert!(!apply.contains("Apply the change"));
+
+        let dry = build_copy_prompt("C:/v/a.md", "   ", true, "ja");
+        assert!(dry.contains("何も編集しないでください"));
+        assert!(dry.contains("diff で報告"));
+        assert!(!dry.contains("Do NOT"));
+
+        // An unrecognized code falls back to English, as the task prompt does.
+        assert!(build_prompt("a.md", "x", false, "fr").contains("Apply the change"));
     }
 
     #[test]

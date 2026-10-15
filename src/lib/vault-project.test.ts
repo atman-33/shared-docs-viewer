@@ -202,6 +202,30 @@ describe("isSurveyStale", () => {
   });
 });
 
+describe("prompts follow the language setting", () => {
+  it("writes the fix prompt in Japanese and keeps paths and findings as they are", () => {
+    const prompt = buildProjectFixPrompt(project({ issues: [issue()] }), "ja");
+    expect(prompt).toContain("のレイアウトの指摘を直してください");
+    expect(prompt).toContain(".claude/rules/projects.md");
+    expect(prompt).not.toContain("How to handle them");
+    expect(buildProjectFixPrompt(project(), "ja")).toBe("");
+  });
+
+  it("writes the survey prompt in Japanese", () => {
+    const prompt = buildSharedSpaceSurveyPrompt(project(), "ja");
+    expect(prompt).toContain("共有スペースを調べて");
+    expect(prompt).toContain(".claude/rules/shared-space.md");
+    expect(prompt).not.toContain("What matters");
+  });
+
+  it("falls back to English for English and for unknown codes", () => {
+    expect(buildSharedSpaceSurveyPrompt(project(), "fr")).toContain("What matters");
+    expect(buildProjectFixPrompt(project({ issues: [issue()] }), "en")).toContain(
+      "How to handle them",
+    );
+  });
+});
+
 describe("buildSharedSpaceSurveyPrompt", () => {
   it("names the project and leaves the location for the owner to paste", () => {
     const prompt = buildSharedSpaceSurveyPrompt(project());

@@ -1147,7 +1147,12 @@ pub fn copy_diagram_edit_prompt(
     instruction: String,
     confirm: bool,
 ) -> Result<(), String> {
-    let prompt = diagram_edit::build_copy_prompt(&path.replace('\\', "/"), &instruction, confirm);
+    let prompt = diagram_edit::build_copy_prompt(
+        &path.replace('\\', "/"),
+        &instruction,
+        confirm,
+        &storage::load().settings.language,
+    );
     app.clipboard()
         .write_text(prompt)
         .map_err(|e| format!("failed to copy prompt: {e}"))
