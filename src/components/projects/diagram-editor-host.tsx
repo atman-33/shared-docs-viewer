@@ -77,6 +77,9 @@ interface Props {
  * opened note. `onPathChange("")` means the note is gone — a delete or a move
  * elsewhere — so the pane lets go of it.
  *
+ * The view is keyed by `path`: switching notes remounts it, so a note never
+ * inherits the previous note's model, file text, mtime or queued save (T-0858).
+ *
  * The parent gives this its height (`min-h-0 flex-1`); the view fills it with
  * `h-full`, so no page-level scroll appears.
  */
@@ -99,7 +102,7 @@ export function DiagramEditorHost({ kind, path, title, project, configVersion, o
   };
   return (
     <div className="min-h-0 flex-1">
-      <View configVersion={configVersion} embedded={embedded} />
+      <View key={path} configVersion={configVersion} embedded={embedded} />
     </div>
   );
 }
