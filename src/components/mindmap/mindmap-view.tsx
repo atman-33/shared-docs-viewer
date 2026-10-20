@@ -240,6 +240,10 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
   // mtime is what makes the next write conflict-safe.
   const source = useRef<{ content: string; mtime: number }>({ content: "", mtime: 0 });
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The note `doc` and `source` were read from. A write is only legitimate for
+  // that note: while `path` has moved on and the read is still in flight, the
+  // model on screen belongs to the previous note (T-0858).
+  const loadedPath = useRef("");
 
   const vaultPath = config?.settings.vault_path ?? null;
   // The Diagrams tab owns the AI edit (T-0685); while one runs the agent holds
@@ -360,6 +364,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
       { fit = false, skipUnchanged = false, onGone }: LoadDocOptions = {},
     ) => {
       if (!target) {
+        loadedPath.current = "";
         setDoc(null);
         return;
       }
@@ -372,12 +377,14 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
         // arrives while the rename is still settling — so failing to read is
         // an expected outcome here, not an error to reject into nothing and
         // leave a dead path selected with it (T-0254).
+        loadedPath.current = "";
         setDoc(null);
         onGone?.();
         return;
       }
       if (skipUnchanged && read.mtime === source.current.mtime) return;
       source.current = { content: read.content, mtime: read.mtime };
+      loadedPath.current = target;
       // A reload means the file, not the user, decided the current state — the
       // stack would otherwise let Ctrl+Z "undo" someone else's edit.
       undoStack.current = [];
@@ -412,6 +419,13 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
   }, [vaultPath, loadProjects]);
 
   useEffect(() => {
+    // Drop the previous note's model and any save still queued for it before
+    // the new one is read, so neither can be drawn or written under this path.
+    if (loadedPath.current !== path) {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      setDoc(null);
+    }
     void loadDoc(path, { fit: true, onGone: () => setPath("") });
     setSelectedId(null);
     setEditingId(null);
@@ -485,6 +499,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
   const apply = useCallback(
     (next: MindmapDocModel) => {
       if (aiRunning) return; // the agent holds the file
+      if (loadedPath.current !== path) return; // not read from this note yet
       setDoc(next);
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
@@ -518,7 +533,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
     if (!saveTimer.current) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = null;
-    if (!doc || !path) return;
+    if (!doc || !path || loadedPath.current !== path) return;
     const content = serializeMindmap(source.current.content, doc, todayISO());
     const mtime = await api.writeMindmap(path, content, source.current.mtime);
     source.current = { content, mtime };
