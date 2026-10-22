@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.165.1 (2026-10-22)
+
+- **Opening a mindmap no longer writes the previously open note's model into it** (T-0858). Switching to another mindmap in the embedded diagram editor could leave the editor holding the old note's model, and an edit or a queued save then overwrote the newly opened note with the old content. The editor is now keyed by the note's path so a switch remounts it, and the mindmap view refuses edits and saves until the current path has been read, dropping any save still queued for the previous note.
+
 ## 0.165.0 (2026-10-15)
 
 - **Copied agent prompts are now written in the Language setting** (T-0821). Only the `## Plan` / `## Results` clause followed Settings → Agents → Language; the rest of the instructions stayed English, and pasting them into Claude Code could make it answer in English too. The task prompt, tidy prompt, Claude Desktop chat prompt, diagram-edit prompt and the Projects tab prompts now each have a Japanese text for `ja` and fall back to English for any other value. Skill names, `## Plan`, commands and paths stay untranslated, and the Japanese clause keeps the scope limit that code, commit messages and repository documents are not affected.
