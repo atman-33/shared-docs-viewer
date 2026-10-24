@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.165.2 (2026-10-24)
+
+- **Archive all Done no longer stops after the first task** (T-0917). When Windows refused to rewrite `_ai/index/tasks.json` (another process held it memory-mapped, os error 1224), the update that had already moved the task file still reported failure, and the bulk archive, which updates tasks one by one, aborted after the first. The index is derived data, so a failed rewrite is now logged to the diagnostic log and the update carries on; creating a task behaves the same way.
+
 ## 0.165.1 (2026-10-22)
 
 - **Opening a mindmap no longer writes the previously open note's model into it** (T-0858). Switching to another mindmap in the embedded diagram editor could leave the editor holding the old note's model, and an edit or a queued save then overwrote the newly opened note with the old content. The editor is now keyed by the note's path so a switch remounts it, and the mindmap view refuses edits and saves until the current path has been read, dropping any save still queued for the previous note.
