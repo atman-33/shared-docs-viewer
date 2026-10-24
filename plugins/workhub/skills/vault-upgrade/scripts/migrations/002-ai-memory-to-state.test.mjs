@@ -76,7 +76,8 @@ describe("detect", () => {
   });
 });
 
-describe("apply (via the runner)", () => {
+// Every case shells out to git several times; on a loaded CI runner that can pass 5 s.
+describe("apply (via the runner)", { timeout: 30_000 }, () => {
   beforeEach(() => {
     git("init", "-q");
     git("config", "user.email", "t@example.com");

@@ -597,7 +597,7 @@ pub fn create_task(vault: &Path, input: CreateTaskInput) -> Result<Task, String>
             .unwrap_or_else(|| "\n## Description\n\n## Plan\n\n## Results\n".to_string()),
     };
     write_task_file(&task)?;
-    regenerate_index(vault)?;
+    refresh_index(vault);
     Ok(task)
 }
 
@@ -788,7 +788,7 @@ pub fn update_task(vault: &Path, input: UpdateTaskInput) -> Result<Task, String>
     // back to `tasks/`.
     relocate_for_archive_state(vault, &mut task)?;
     write_task_file(&task)?;
-    regenerate_index(vault)?;
+    refresh_index(vault);
     Ok(task)
 }
 
@@ -926,6 +926,17 @@ pub fn regenerate_index(vault: &Path) -> Result<(), String> {
     }
     let body = serde_json::to_string_pretty(&entries).map_err(|e| e.to_string())?;
     fs::write(&path, body).map_err(|e| e.to_string())
+}
+
+/// Rewrites the index after a task file has already been written. The index is
+/// derived data, so a failure here (typically Windows refusing to truncate
+/// `tasks.json` while another process has it memory-mapped, os error 1224) is
+/// logged and swallowed: the update itself succeeded, and returning the error
+/// made a bulk archive stop after its first task (T-0917).
+fn refresh_index(vault: &Path) {
+    if let Err(e) = regenerate_index(vault) {
+        crate::diag!("tasks: index rewrite failed after a task update: {e}");
+    }
 }
 
 /// Convenience for the `list_tasks` command: scan and keep the index fresh
@@ -2394,6 +2405,44 @@ mod tests {
         assert_eq!(arr[0]["file"], "tasks/T-0001 indexed task.md");
         assert_eq!(arr[0]["tags"][0], "feature");
 
+        fs::remove_dir_all(&vault).ok();
+    }
+
+    #[test]
+    fn update_survives_an_unwritable_index() {
+        let vault = temp_vault("index-unwritable");
+        let mut ids = Vec::new();
+        for title in ["one", "two", "three"] {
+            let t = create_task(
+                &vault,
+                CreateTaskInput {
+                    title: title.into(),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            ids.push(t.id);
+        }
+        // A directory where the index file belongs makes every index write fail,
+        // like Windows refusing to truncate a memory-mapped `tasks.json`.
+        fs::remove_file(index_file(&vault)).unwrap();
+        fs::create_dir(index_file(&vault)).unwrap();
+        assert!(regenerate_index(&vault).is_err());
+
+        // A bulk archive must not stop at the first task (T-0917).
+        for id in &ids {
+            let t = update_task(
+                &vault,
+                UpdateTaskInput {
+                    id: id.clone(),
+                    archived: Some(true),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            assert!(t.archived);
+            assert!(PathBuf::from(&t.file).exists());
+        }
         fs::remove_dir_all(&vault).ok();
     }
 
