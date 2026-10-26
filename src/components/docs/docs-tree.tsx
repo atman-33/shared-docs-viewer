@@ -35,6 +35,7 @@ import { isPreviewable } from "@/lib/docs/preview-kind";
 import { type DirState, entryRows, flattenTree, navigate, type Row } from "@/lib/docs/tree-nav";
 import { cn } from "@/lib/utils";
 import type { DocsEntry } from "@/types";
+import { useScrollCursor } from "./use-scroll-cursor";
 
 /** What a tree row's context menu can do. Errors are reported by the tree. */
 export interface EntryActions {
@@ -213,12 +214,8 @@ export function DocsTree({
     return true;
   };
 
-  // Keep the cursor visible when a key moved it rather than a click.
-  useEffect(() => {
-    if (!cursor) return;
-    const el = scroller.current?.querySelector<HTMLElement>(`[data-path="${CSS.escape(cursor)}"]`);
-    el?.scrollIntoView({ block: "nearest" });
-  }, [cursor, rows]);
+  // Keep the cursor visible when it moves — not when the rows merely change.
+  useScrollCursor(scroller, cursor, rows);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape" && picked.paths.length > 0) {

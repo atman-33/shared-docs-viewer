@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,6 +25,7 @@ import { isPreviewable } from "@/lib/docs/preview-kind";
 import { baseName, type DirState } from "@/lib/docs/tree-nav";
 import { cn } from "@/lib/utils";
 import type { DocsEntry } from "@/types";
+import { useScrollCursor } from "./use-scroll-cursor";
 
 /**
  * The second sidebar (T-0276): the files directly inside the folder picked in
@@ -75,11 +76,7 @@ export function DocsFileList({
   }, [state, filter]);
   const order = useMemo(() => files.map((f) => f.path), [files]);
 
-  useEffect(() => {
-    if (!cursor) return;
-    const el = scroller.current?.querySelector<HTMLElement>(`[data-path="${CSS.escape(cursor)}"]`);
-    el?.scrollIntoView({ block: "nearest" });
-  }, [cursor, files]);
+  useScrollCursor(scroller, cursor, files);
 
   const activate = (entry: DocsEntry) => {
     onCursorChange(entry.path);
