@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.165.3 (2026-10-26)
+
+- **Expanding or collapsing a folder in the Docs tree no longer scrolls the view to the open document** (T-0946). A folder row toggles without moving the keyboard cursor, so the cursor stayed on the open file, and the effect that keeps the cursor in view also reran whenever the rows changed, pulling the view back to that file on every expand or collapse. That made it awkward to open a folder and pick a file inside it. The tree and the file-list pane now scroll once per cursor move, and wait for a row that has not rendered yet, so a shortcut that opens the tree down to a file still lands on it.
+
 ## 0.165.2 (2026-10-24)
 
 - **Archive all Done no longer stops after the first task** (T-0917). When Windows refused to rewrite `_ai/index/tasks.json` (another process held it memory-mapped, os error 1224), the update that had already moved the task file still reported failure, and the bulk archive, which updates tasks one by one, aborted after the first. The index is derived data, so a failed rewrite is now logged to the diagnostic log and the update carries on; creating a task behaves the same way.
