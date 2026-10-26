@@ -30,3 +30,9 @@ demo-vault/.claude/project-context.json
 demo-vault/opencode.json
 # Ink captures are pictures of whatever was on screen.
 demo-vault/attachments/ink/
+
+# Local scratch: Playwright MCP captures, task-body drafts, and the vault state
+# the CLI writes when it is run from this repository.
+.playwright-mcp/
+.tmp/
+/_ai/
