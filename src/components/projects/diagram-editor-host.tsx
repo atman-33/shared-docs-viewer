@@ -62,6 +62,10 @@ interface Props {
   configVersion: number;
   /** The note vanished (or the reader backed out): clear the selection. */
   onClose: () => void;
+  /** Jump to the Diagrams tab with this note (rendered in each view's toolbar). */
+  onOpenInDiagrams: () => void;
+  /** Open this note in Obsidian (rendered in each view's toolbar). */
+  onOpenInObsidian: () => void;
 }
 
 /**
@@ -83,7 +87,7 @@ interface Props {
  * The parent gives this its height (`min-h-0 flex-1`); the view fills it with
  * `h-full`, so no page-level scroll appears.
  */
-export function DiagramEditorHost({ kind, path, title, project, configVersion, onClose }: Props) {
+export function DiagramEditorHost({ kind, path, title, project, configVersion, onClose, onOpenInDiagrams, onOpenInObsidian }: Props) {
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
   const View = editorComponentFor(kind);
   if (!View) return null;
@@ -99,6 +103,8 @@ export function DiagramEditorHost({ kind, path, title, project, configVersion, o
     reloadToken: 0,
     sidePanelOpen,
     onSidePanelOpenChange: setSidePanelOpen,
+    onOpenInDiagrams,
+    onOpenInObsidian,
   };
   return (
     <div className="min-h-0 flex-1">

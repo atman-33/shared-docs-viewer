@@ -34,4 +34,9 @@ export interface EmbeddedDiagram {
    * because it is stored in the vault settings, per kind. */
   sidePanelOpen: boolean;
   onSidePanelOpenChange: (open: boolean) => void;
+  /** Projects panes only (T-1005): jump to the Diagrams tab with this note.
+   * Absent in the Diagrams tab, where the view already lives there. */
+  onOpenInDiagrams?: () => void;
+  /** Projects panes only (T-1005): open this note in Obsidian. */
+  onOpenInObsidian?: () => void;
 }

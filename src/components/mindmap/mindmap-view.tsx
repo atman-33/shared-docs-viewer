@@ -27,6 +27,7 @@ import { NodeEditor } from "@/components/mindmap/node-editor";
 import { ProjectCreateDialog } from "@/components/schedule/project-create-dialog";
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/ui/hint";
+import { EmbeddedDiagramActions } from "@/components/projects/embedded-diagram-actions";
 import { SidePanel } from "@/components/diagram/panel-frame";
 import type { EmbeddedDiagram } from "@/lib/embedded-diagram";
 import { Input } from "@/components/ui/input";
@@ -1521,6 +1522,13 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
           </Hint>
         )}
 
+          </>
+        )}
+
+        {embedded && (
+          <>
+            <span className="truncate text-xs font-medium">{doc?.title ?? embedded.title}</span>
+            <EmbeddedDiagramActions embedded={embedded} />
           </>
         )}
 

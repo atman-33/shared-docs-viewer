@@ -7,6 +7,7 @@ import { LanesEditor } from "@/components/diagram/flow/lanes-editor";
 import { StepEditor } from "@/components/diagram/flow/step-editor";
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/ui/hint";
+import { EmbeddedDiagramActions } from "@/components/projects/embedded-diagram-actions";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { api } from "@/lib/api";
 import {
@@ -930,6 +931,7 @@ export function FlowView({ configVersion, embedded }: Props) {
             )}
           >
             <span className="truncate text-xs font-medium">{doc.title}</span>
+            <EmbeddedDiagramActions embedded={embedded} />
             <div className="ml-auto flex items-center gap-1.5">
               {locked && (
                 <span className="text-[11px] text-amber-500">{t("diagram.aiPanel.lockedHint")}</span>

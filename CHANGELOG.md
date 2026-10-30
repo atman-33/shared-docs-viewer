@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.168.0 (2026-10-30)
+
+- **Diagram notes in the Projects tab read in a single row** (T-1005, stacked on T-0999). The per-file header is gone for diagrams: each of the nine editor toolbars now carries the note title with "Open in Diagrams tab" and "Open in Obsidian" at its head, so the pane gains a full row of vertical space. The back-to-list arrow is gone from every file reader (image, diagram, document in both Backlog and Documents) — the adjacent list selects instead. Switching Overview / Documents / Backlog no longer resets the open item: visited panes stay mounted and are only hidden, and still remount on a project switch.
+
 ## 0.167.0 (2026-10-30)
 
 - **The Projects tab's picker and pane switcher now share one row** (T-0999, stacked on T-0997). The project combobox and the Overview / Documents / Backlog tabs sit in the unified top row with the Status filter and pane Refresh, and the sub-header below keeps only the project name, status, update time and icon-only buttons (list controls plus README / Tasks / Diagrams / Repo / Archive, each with a tooltip). The backlog pane gains a full row of vertical space; every navigation stays reachable.
