@@ -1431,7 +1431,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
   // take, and the panel group below collapses to a few pixels.
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-1">
         {!embedded && (
           <>
         <Select
@@ -1444,7 +1444,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             setProject(v === ALL_PROJECTS ? "" : v);
           }}
         >
-          <SelectTrigger className="h-7 w-40 text-xs">
+          <SelectTrigger className="h-6 w-40 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1460,7 +1460,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
         </Select>
 
         <Select value={path} onValueChange={setPath} disabled={!files.length}>
-          <SelectTrigger className="h-7 w-56 text-xs">
+          <SelectTrigger className="h-6 w-56 text-xs">
             <SelectValue
               placeholder={files.length ? t("mindmap.view.pickPlaceholder") : t("mindmap.view.noneYet")}
             />
@@ -1488,7 +1488,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               onClick={() => setCreating(true)}
               disabled={!targetProject}
             >
@@ -1510,7 +1510,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!path || aiRunning}
               onClick={() => {
                 setRenameTitle(current?.title ?? "");
@@ -1538,7 +1538,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
           onValueChange={(v) => changeNodeWidth(v as NodeWidth)}
         >
           <Hint label={t("mindmap.view.nodeWidthHint")}>
-            <SelectTrigger className="h-7 w-32 text-xs">
+            <SelectTrigger className="h-6 w-32 text-xs">
               <SelectValue />
             </SelectTrigger>
           </Hint>
@@ -1562,7 +1562,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
               onValueChange={(v) => changeAttrView({ color: v === ATTR_NONE ? "" : v })}
             >
               <Hint label={t("mindmap.view.colorByHint")}>
-                <SelectTrigger className="h-7 w-36 text-xs">
+                <SelectTrigger className="h-6 w-36 text-xs">
                   <SelectValue />
                 </SelectTrigger>
               </Hint>
@@ -1590,7 +1590,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
               }}
             >
               <Hint label={t("mindmap.view.filterHint")}>
-                <SelectTrigger className="h-7 w-40 text-xs">
+                <SelectTrigger className="h-6 w-40 text-xs">
                   <SelectValue />
                 </SelectTrigger>
               </Hint>
@@ -1625,7 +1625,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc}
               onClick={() => setFitToken((n) => n + 1)}
             >
@@ -1639,7 +1639,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant={doc?.nodeIdsShown ? "secondary" : "outline"}
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc || aiRunning}
               onClick={toggleNodeIds}
             >
@@ -1658,7 +1658,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
               <Button
                 size="sm"
                 variant={doc?.stickiesHidden ? "outline" : "secondary"}
-                className="h-7 text-xs"
+                className="h-6 text-xs"
                 disabled={!doc || aiRunning}
                 onClick={toggleStickies}
               >
@@ -1671,7 +1671,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc}
               onClick={copyMermaid}
             >
@@ -1683,7 +1683,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc}
               onClick={exportHtml}
             >
@@ -1694,7 +1694,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc}
               onClick={exportPng}
             >
@@ -1705,7 +1705,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc}
               onClick={() => void copyForMiro()}
             >
@@ -1716,7 +1716,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!doc}
               onClick={() => void copyImage()}
             >
@@ -1727,7 +1727,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               disabled={!path || aiRunning}
               onClick={() => setDeleteOpen(true)}
             >

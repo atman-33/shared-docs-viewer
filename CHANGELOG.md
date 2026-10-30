@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.169.0 (2026-10-30)
+
+- **Denser headers and toolbars in the Projects tab** (T-1006, stacked on T-1005). The sub-header drops to `py-1`, the content starts at `pt-2`, and every diagram toolbar row (all nine kinds, shared with the Diagrams tab) with its buttons and pickers steps down from `h-7` to `h-6`. The image/document file headers follow. Roughly 20px of vertical space returns to the main area.
+
 ## 0.168.0 (2026-10-30)
 
 - **Diagram notes in the Projects tab read in a single row** (T-1005, stacked on T-0999). The per-file header is gone for diagrams: each of the nine editor toolbars now carries the note title with "Open in Diagrams tab" and "Open in Obsidian" at its head, so the pane gains a full row of vertical space. The back-to-list arrow is gone from every file reader (image, diagram, document in both Backlog and Documents) — the adjacent list selects instead. Switching Overview / Documents / Backlog no longer resets the open item: visited panes stay mounted and are only hidden, and still remount on a project switch.
