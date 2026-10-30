@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from "react";
+import { useRef, useState, type ComponentType } from "react";
 import { FlowView } from "@/components/diagram/flow/flow-view";
 import { PfdView } from "@/components/diagram/pfd/pfd-view";
 import { AlgorithmView } from "@/components/diagram/algorithm/algorithm-view";
@@ -8,6 +8,7 @@ import { UsecaseView } from "@/components/diagram/usecase/usecase-view";
 import { MatrixView } from "@/components/diagram/matrix2x2/matrix-view";
 import { MindmapView } from "@/components/mindmap/mindmap-view";
 import { ScheduleView } from "@/components/schedule/schedule-view";
+import { api } from "@/lib/api";
 import type { EmbeddedDiagram } from "@/lib/embedded-diagram";
 import type { DiagramKind } from "@/lib/diagram-kinds";
 
@@ -89,6 +90,9 @@ interface Props {
  */
 export function DiagramEditorHost({ kind, path, title, project, configVersion, onClose, onOpenInDiagrams, onOpenInObsidian }: Props) {
   const [sidePanelOpen, setSidePanelOpen] = useState(true);
+  // The editor's pending save, flushed before the prompt is copied so the
+  // agent reads what is on screen (same as the Diagrams tab's toolbar copy).
+  const flushRef = useRef<(() => Promise<void>) | null>(null);
   const View = editorComponentFor(kind);
   if (!View) return null;
   const embedded: EmbeddedDiagram = {
@@ -99,10 +103,17 @@ export function DiagramEditorHost({ kind, path, title, project, configVersion, o
       if (!next) onClose();
     },
     locked: false,
-    registerFlush: () => {},
+    registerFlush: (flush) => {
+      flushRef.current = flush;
+    },
     reloadToken: 0,
     sidePanelOpen,
     onSidePanelOpenChange: setSidePanelOpen,
+    onCopyPrompt: async () => {
+      await flushRef.current?.();
+      const config = await api.getConfig();
+      await api.copyDiagramEditPrompt(path, "", config.settings.diagram_confirm ?? false);
+    },
     onOpenInDiagrams,
     onOpenInObsidian,
   };
