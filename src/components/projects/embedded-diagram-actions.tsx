@@ -8,8 +8,9 @@ import type { EmbeddedDiagram } from "@/lib/embedded-diagram";
  *
  * Every diagram view renders these at the head of its toolbar row when the
  * host passes the callbacks (the Projects panes). The Diagrams tab passes
- * neither, so its toolbars render exactly as before. One component so all
- * nine kinds read the same.
+ * neither, so its toolbars render exactly as before. The prompt copy lives
+ * separately in `EmbeddedCopyPrompt` at the toolbar's right end (T-0998).
+ * One component so all nine kinds read the same.
  */
 export function EmbeddedDiagramActions({ embedded }: { embedded?: EmbeddedDiagram }) {
   const t = useT();

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.170.0 (2026-10-30)
+
+- **The Diagrams tab no longer edits with AI in the app** (T-0998). The ✨ edit button, the ⚙ agent settings and the side panel are gone: editing moved to the terminal / desktop session (Claude Code, OpenCode). Every editor toolbar — in the Diagrams tab and in the projects Backlog (and Documents) panes alike — carries the 📋 button at its right end, copying the `diagram-edit` prompt for pasting there. On-screen edits are saved before the copy, so the prompt is one click away wherever a diagram is shown. The backend runner and the `diagram-edit` skill stay as they are.
+
 ## 0.169.0 (2026-10-30)
 
 - **Denser headers and toolbars in the Projects tab** (T-1006, stacked on T-1005). The sub-header drops to `py-1`, the content starts at `pt-2`, and every diagram toolbar row (all nine kinds, shared with the Diagrams tab) with its buttons and pickers steps down from `h-7` to `h-6`. The image/document file headers follow. Roughly 20px of vertical space returns to the main area.

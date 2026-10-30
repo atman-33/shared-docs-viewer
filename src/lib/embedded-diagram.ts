@@ -34,6 +34,10 @@ export interface EmbeddedDiagram {
    * because it is stored in the vault settings, per kind. */
   sidePanelOpen: boolean;
   onSidePanelOpenChange: (open: boolean) => void;
+  /** Projects panes only (T-0998): copy the `diagram-edit` prompt for pasting
+   * into a terminal / desktop agent session. Absent in the Diagrams tab,
+   * whose toolbar owns its own copy button. */
+  onCopyPrompt?: () => Promise<unknown> | void;
   /** Projects panes only (T-1005): jump to the Diagrams tab with this note.
    * Absent in the Diagrams tab, where the view already lives there. */
   onOpenInDiagrams?: () => void;

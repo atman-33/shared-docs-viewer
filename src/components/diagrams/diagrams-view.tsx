@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
-import { ChevronDown, ChevronRight, FolderPlus, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderPlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/graph/confirm-dialog";
-import { DiagramAiPanel } from "@/components/diagram/diagram-ai-panel";
-import { DiagramAiSettings } from "@/components/diagram/diagram-ai-settings";
 import { PanelToggle } from "@/components/diagram/panel-frame";
 import { FlowView } from "@/components/diagram/flow/flow-view";
 import { PfdView } from "@/components/diagram/pfd/pfd-view";
@@ -69,7 +67,7 @@ import { projectNumberedLabel, projectOptionsOf } from "@/lib/vault-project";
 import { readLastVaultPath, readViewState, writeLastVaultPath, writeViewState } from "@/lib/view-state";
 import { shiftDate, toISO, formatRange } from "@/lib/schedule/layout";
 import { cn } from "@/lib/utils";
-import type { BacklogItem, Config, DiagramEditRun, DiagramFile } from "@/types";
+import type { BacklogItem, Config, DiagramFile } from "@/types";
 
 const VIEW_ID = "diagrams";
 const KIND_FILTER_KEY = "diagrams.kindFilter";
@@ -122,14 +120,8 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   const [renaming, setRenaming] = useState<DiagramFile | null>(null);
   const [deleting, setDeleting] = useState<DiagramFile | null>(null);
   const [error, setError] = useState("");
-  // The AI edit (T-0685) is one runner for every kind of diagram, so its state
-  // and panel live here, not in each editor.
-  const [aiRun, setAiRun] = useState<DiagramEditRun | null>(null);
-  const [aiOpen, setAiOpen] = useState(false);
-  // Bumped when an AI edit ends or is undone: the editors re-read the note.
-  const [reloadToken, setReloadToken] = useState(0);
   // Each editor registers a function that writes its pending save; called
-  // before a run so the agent reads what is on screen.
+  // before the prompt is copied so the agent reads what is on screen.
   const flushers = useRef<Record<string, (() => Promise<void>) | null>>({});
 
   const vaultPath = config?.settings.vault_path ?? null;
@@ -145,23 +137,6 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
     setConfig((c) => (c ? { ...c, settings: { ...c.settings, ...patch } } : c));
     setConfig(await api.patchSettings(patch));
   }, []);
-
-  useEffect(() => {
-    void api.diagramEditStatus().then(setAiRun);
-    const unlisten = listen<DiagramEditRun>("diagram-edit:status", (e) => setAiRun(e.payload));
-    return () => {
-      void unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  // While a run is live the agent holds the file: every editor is locked, and
-  // the run's end triggers a re-read (the file watcher usually has already).
-  const aiRunning = aiRun?.state === "running";
-  const wasRunning = useRef(false);
-  useEffect(() => {
-    if (wasRunning.current && !aiRunning) setReloadToken((n) => n + 1);
-    wasRunning.current = aiRunning;
-  }, [aiRunning]);
 
   // A project handed over by the Projects tab. Keyed on the request counter so
   // a parent re-render never re-applies it over a project picked here since.
@@ -383,36 +358,24 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
     );
   }
 
-  /** Writes the open editor's pending save, so a run starts from what is on screen. */
+  /** Writes the open editor's pending save, so the agent reads what is on screen. */
   const flushEditor = async () => {
     if (kind) await flushers.current[kind]?.();
   };
 
-  const runAi = async (instruction: string, confirm: boolean) => {
+  // Editing moved to the terminal / desktop session (T-0998): the app only
+  // copies the prompt. The instruction is empty on purpose — the owner gives
+  // it in the following messages — and the file is flushed first so the agent
+  // reads what is on screen. Handed to every editor through `embedded`, so the
+  // button sits in the same toolbar spot in both tabs.
+  const copyAiPrompt = async () => {
     if (!current) return;
-    setError("");
-    try {
-      await flushEditor();
-      await api.runDiagramEdit(current.path, instruction, confirm);
-    } catch (e) {
-      setError(String(e));
-    }
-  };
-
-  const copyAiPrompt = async (instruction: string, confirm: boolean) => {
-    if (!current) return;
-    // Flush first so the file the agent reads has the on-screen edits.
     await flushEditor();
-    await api.copyDiagramEditPrompt(current.path, instruction, confirm);
-  };
-
-  const undoAi = () => {
-    if (!current) return;
-    setError("");
-    void api
-      .restoreDiagramSnapshot(current.path)
-      .then(() => setReloadToken((n) => n + 1))
-      .catch((e) => setError(String(e)));
+    await api.copyDiagramEditPrompt(
+      current.path,
+      "",
+      config?.settings.diagram_confirm ?? false,
+    );
   };
 
   // Side panels hide per kind of diagram (T-0686). With no note open there is
@@ -433,10 +396,11 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
     project: current?.project ?? project,
     path: kind === which ? path : "",
     title: current?.title ?? "",
-    locked: aiRunning,
-    reloadToken,
+    locked: false,
+    reloadToken: 0,
     sidePanelOpen: isPanelOpen(hiddenPanels, which, "right"),
     onSidePanelOpenChange: (open: boolean) => setPanelOpen(which, "right", open),
+    onCopyPrompt: copyAiPrompt,
     registerFlush: (flush: (() => Promise<void>) | null) => {
       flushers.current[which] = flush;
     },
@@ -479,13 +443,12 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
         </ContextMenuTrigger>
         {editable && (
           <ContextMenuContent className="w-44">
-            <ContextMenuItem disabled={aiRunning} onClick={() => setRenaming(file)}>
+            <ContextMenuItem onClick={() => setRenaming(file)}>
               <Pencil className="size-4" />
               {t("diagram.list.rename")}
             </ContextMenuItem>
             <ContextMenuItem
               variant="destructive"
-              disabled={aiRunning}
               onClick={() => setDeleting(file)}
             >
               <Trash2 className="size-4" />
@@ -574,21 +537,6 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
         </Hint>
         {error && <span className="max-w-96 truncate text-[11px] text-destructive">{error}</span>}
         <div className="ml-auto flex items-center gap-1.5">
-          <DiagramAiSettings
-            settings={config?.settings ?? null}
-            onPatch={(patch) => void patchSettings(patch)}
-          />
-          <Hint label={t("diagram.aiPanel.toggleHint")} disabled={!current}>
-            <Button
-              size="sm"
-              variant={aiOpen ? "secondary" : "outline"}
-              className="h-7 text-xs"
-              disabled={!current}
-              onClick={() => setAiOpen((v) => !v)}
-            >
-              <Sparkles className="size-3.5" />
-            </Button>
-          </Hint>
           <PanelToggle
             side="right"
             open={!kind || isPanelOpen(hiddenPanels, kind, "right")}
@@ -728,19 +676,6 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
         </div>
           </ResizablePanel>
         </ResizablePanelGroup>
-
-        {aiOpen && aiRun && current && (
-          <aside className="flex w-72 shrink-0 flex-col border-l">
-            <DiagramAiPanel
-              run={aiRun}
-              defaultConfirm={config?.settings.diagram_confirm ?? false}
-              disabled={!current}
-              onRun={(instruction, confirm) => void runAi(instruction, confirm)}
-              onUndo={undoAi}
-              onCopyPrompt={copyAiPrompt}
-            />
-          </aside>
-        )}
       </div>
 
       <ProjectCreateDialog

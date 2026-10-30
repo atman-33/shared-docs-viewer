@@ -28,6 +28,7 @@ import { ProjectCreateDialog } from "@/components/schedule/project-create-dialog
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/ui/hint";
 import { EmbeddedDiagramActions } from "@/components/projects/embedded-diagram-actions";
+import { EmbeddedCopyPrompt } from "@/components/projects/embedded-copy-prompt";
 import { SidePanel } from "@/components/diagram/panel-frame";
 import type { EmbeddedDiagram } from "@/lib/embedded-diagram";
 import { Input } from "@/components/ui/input";
@@ -1615,6 +1616,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
         )}
 
         <div className="ml-auto flex items-center gap-1.5">
+          <EmbeddedCopyPrompt embedded={embedded} />
           {status && <span className="max-w-72 truncate text-[11px] text-muted-foreground">{status}</span>}
           {nodeCount > 0 && (
             <span className="text-[11px] text-muted-foreground">

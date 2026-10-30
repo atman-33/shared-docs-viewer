@@ -9,6 +9,7 @@ import { OverviewPanel } from "@/components/diagram/architecture/overview-panel"
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/ui/hint";
 import { EmbeddedDiagramActions } from "@/components/projects/embedded-diagram-actions";
+import { EmbeddedCopyPrompt } from "@/components/projects/embedded-copy-prompt";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { api } from "@/lib/api";
 import {
@@ -1088,6 +1089,7 @@ export function ArchitectureView({ configVersion, embedded }: Props) {
             <span className="truncate text-xs font-medium">{doc.title}</span>
             <EmbeddedDiagramActions embedded={embedded} />
             <div className="ml-auto flex items-center gap-1.5">
+              <EmbeddedCopyPrompt embedded={embedded} />
               {locked && (
                 <span className="text-[11px] text-amber-500">{t("diagram.aiPanel.lockedHint")}</span>
               )}
