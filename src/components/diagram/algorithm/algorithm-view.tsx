@@ -918,7 +918,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
           <div
             inert={locked}
             className={cn(
-              "flex flex-wrap items-center gap-1.5 border-b px-3 py-1.5",
+              "flex flex-wrap items-center gap-1.5 border-b px-3 py-1",
               locked && "opacity-60",
             )}
           >
@@ -964,7 +964,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
                 ))}
               </div>
               <Hint label={t("diagram.algorithm.addHint")}>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={addNodeAfter}>
+                <Button size="sm" variant="outline" className="h-6 text-xs" onClick={addNodeAfter}>
                   <Plus className="size-3.5" />
                 </Button>
               </Hint>
@@ -972,7 +972,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
+                  className="h-6 text-xs"
                   onClick={() => setFitToken((n) => n + 1)}
                 >
                   <Maximize2 className="size-3.5" />
@@ -989,7 +989,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
                   <Button
                     size="sm"
                     variant={doc.stickiesHidden ? "outline" : "secondary"}
-                    className="h-7 text-xs"
+                    className="h-6 text-xs"
                     onClick={toggleStickies}
                   >
                     <StickyNote className="mr-1 size-3.5" />
@@ -998,12 +998,12 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
                 </Hint>
               )}
               <Hint label={t("diagram.algorithm.exportHtmlHint")}>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={exportHtml}>
+                <Button size="sm" variant="outline" className="h-6 text-xs" onClick={exportHtml}>
                   <Download className="size-3.5" />
                 </Button>
               </Hint>
               <Hint label={t("diagram.algorithm.exportPngHint")}>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={exportPng}>
+                <Button size="sm" variant="outline" className="h-6 text-xs" onClick={exportPng}>
                   <Image className="size-3.5" />
                 </Button>
               </Hint>
@@ -1011,7 +1011,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
+                  className="h-6 text-xs"
                   onClick={() => void copyForMiro()}
                 >
                   <ClipboardCopy className="size-3.5" />
@@ -1021,7 +1021,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
+                  className="h-6 text-xs"
                   onClick={() => void copyImage()}
                 >
                   <ImagePlus className="size-3.5" />

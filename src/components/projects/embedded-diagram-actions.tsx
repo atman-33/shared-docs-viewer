@@ -20,7 +20,7 @@ export function EmbeddedDiagramActions({ embedded }: { embedded?: EmbeddedDiagra
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 shrink-0 gap-1.5 text-xs"
+          className="h-6 shrink-0 gap-1.5 text-xs"
           onClick={embedded.onOpenInDiagrams}
         >
           <Shapes className="size-3.5" />
@@ -31,7 +31,7 @@ export function EmbeddedDiagramActions({ embedded }: { embedded?: EmbeddedDiagra
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 shrink-0 gap-1.5 text-xs"
+          className="h-6 shrink-0 gap-1.5 text-xs"
           onClick={embedded.onOpenInObsidian}
         >
           <BookOpen className="size-3.5" />

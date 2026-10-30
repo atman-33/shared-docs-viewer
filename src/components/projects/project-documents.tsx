@@ -282,7 +282,7 @@ export function ProjectDocuments({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
+                  className="h-6 gap-1.5 text-xs"
                   onClick={() => openInObsidian(selected)}
                 >
                   <BookOpen className="size-3.5" />
@@ -320,7 +320,7 @@ export function ProjectDocuments({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
+                  className="h-6 gap-1.5 text-xs"
                   onClick={() => openInObsidian(selected)}
                 >
                   <BookOpen className="size-3.5" />

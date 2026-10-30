@@ -562,7 +562,7 @@ export function ProjectsView({
                 lives in the Overview pane below), the status and update time,
                 and icon-only navigation with tooltips. One compact row; every
                 destination stays reachable. */}
-              <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-1.5">
+              <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-1">
                 <h2 className="mr-1 min-w-0 truncate text-base font-semibold">
                   {current.name}
                 </h2>
@@ -581,7 +581,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant={showArchived ? "secondary" : "ghost"}
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={t("projects.view.archivedToggle")}
                       onClick={() => setShowArchived((v) => !v)}
                     >
@@ -598,7 +598,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 gap-1 px-2"
+                      className="h-6 gap-1 px-2"
                       aria-label={
                         sortMode === "order"
                           ? t("projects.view.sortByPosition")
@@ -618,7 +618,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={t("projects.view.refresh")}
                       onClick={() => void load()}
                     >
@@ -632,7 +632,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={hasReadme ? t("projects.view.openReadme") : t("projects.view.openFolder")}
                       onClick={() => {
                         if (hasReadme) void api.openInObsidian(`${current.path}/README.md`);
@@ -646,7 +646,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={t("projects.view.tasksButton")}
                       onClick={() => onNavigate("tasks", current.slug)}
                     >
@@ -657,7 +657,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={t("projects.view.diagramsButton")}
                       onClick={() => onNavigate("diagrams", current.slug)}
                     >
@@ -668,7 +668,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={t("projects.view.repoButton")}
                       disabled={!defaultRepo}
                       onClick={() => defaultRepo && onNavigate("repos", defaultRepo.path)}
@@ -682,7 +682,7 @@ export function ProjectsView({
                     <Button
                       size="sm"
                       variant={current.archived ? "outline" : "ghost"}
-                      className="h-7 w-7 p-0"
+                      className="h-6 w-6 p-0"
                       aria-label={current.archived ? t("projects.view.restore") : t("projects.view.archive")}
                       onClick={() => setArchiveOpen(true)}
                     >
@@ -704,7 +704,7 @@ export function ProjectsView({
                 survive. `key={slug}` still remounts everything on a project
                 switch, so no document leaks over. Overview scrolls as a page,
                 while Documents / Backlog scroll inside themselves (T-0737). */}
-              <div className="min-h-0 flex-1 p-4">
+              <div className="min-h-0 flex-1 px-4 pb-4 pt-2">
                 {visited.documents && (
                   <div
                     className={cn(

@@ -920,7 +920,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2 text-xs">
+      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-1 text-xs">
         {!embedded && (
           <>
         {/* A schedule lives inside a vault project (a folder under
@@ -938,7 +938,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             setProject(v === "__all__" ? "" : v);
           }}
         >
-          <SelectTrigger className="h-7 w-40 text-xs">
+          <SelectTrigger className="h-6 w-40 text-xs">
             <SelectValue placeholder={t("schedule.view.projectPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -959,7 +959,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
         </Select>
 
         <Select value={path} onValueChange={setPath}>
-          <SelectTrigger className="h-7 w-56 text-xs">
+          <SelectTrigger className="h-6 w-56 text-xs">
             <SelectValue placeholder={t("schedule.view.selectSchedule")} />
           </SelectTrigger>
           <SelectContent>
@@ -986,7 +986,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs"
+                className="h-6 text-xs"
                 // A schedule belongs to exactly one project. Under "All
                 // projects" the dropdown names none, but an open note does —
                 // see `targetProject`.
@@ -1008,7 +1008,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             />
             <Button
               size="sm"
-              className="h-7 w-full text-xs"
+              className="h-6 w-full text-xs"
               disabled={!newTitle.trim()}
               onClick={() => {
                 void (async () => {
@@ -1046,7 +1046,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             disabled={!path || aiRunning}
           >
             <PopoverTrigger asChild>
-              <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!path || aiRunning}>
+              <Button size="sm" variant="outline" className="h-6 text-xs" disabled={!path || aiRunning}>
                 {/* While the agent holds the file, moving it would pull the file
                     out from under the run. */}
                 <Pencil className="size-3.5" />
@@ -1066,7 +1066,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             />
             <Button
               size="sm"
-              className="h-7 w-full text-xs"
+              className="h-6 w-full text-xs"
               disabled={!renameTitle.trim()}
               onClick={() => void handleRename()}
             >
@@ -1150,7 +1150,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-xs"
+                className="h-6 text-xs"
                 onClick={goToToday}
                 disabled={!doc}
               >
@@ -1212,7 +1212,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               onClick={() => void loadDoc(path)}
               disabled={!path}
             >
@@ -1223,7 +1223,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               onClick={() => void handleExport()}
               disabled={!doc}
             >
@@ -1234,7 +1234,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               onClick={() => void copyImage()}
               disabled={!doc || !window_}
             >
@@ -1252,7 +1252,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs"
+              className="h-6 text-xs"
               // While the agent holds the file, moving it would pull the file
               // out from under the run — the same guard the rename carries.
               disabled={!path || aiRunning}
