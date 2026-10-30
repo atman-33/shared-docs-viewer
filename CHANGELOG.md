@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.166.0 (2026-10-30)
+
+- **The Projects tab's project selection moved into the top toolbar** (T-0997). The left project list is gone: its place in the toolbar now holds a button that opens the full list (pins, drag-reorder, archived section, orphan report) as a dialog, and the Search box is a combobox that lists every project for a typed filter to cut through. The last selected project is remembered per machine and restored on the next launch; typing in either picker no longer switches the detail pane, and a vault switch still starts from the first project instead of inheriting the old vault's selection.
+
 ## 0.165.3 (2026-10-26)
 
 - **Expanding or collapsing a folder in the Docs tree no longer scrolls the view to the open document** (T-0946). A folder row toggles without moving the keyboard cursor, so the cursor stayed on the open file, and the effect that keeps the cursor in view also reran whenever the rows changed, pulling the view back to that file on every expand or collapse. That made it awkward to open a folder and pick a file inside it. The tree and the file-list pane now scroll once per cursor move, and wait for a row that has not rendered yet, so a shortcut that opens the tree down to a file still lands on it.

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import {
   Archive,
@@ -12,6 +11,7 @@ import {
   FolderPlus,
   GitBranch,
   Info,
+  List,
   ListTodo,
   Shapes,
   RefreshCw,
@@ -19,20 +19,14 @@ import {
 import { Hint } from "@/components/ui/hint";
 import { CopyPromptButton } from "@/components/copy-prompt-button";
 import { ConfirmDialog } from "@/components/graph/confirm-dialog";
-import { PanelToggle } from "@/components/diagram/panel-frame";
 import { ProjectBacklog } from "@/components/projects/project-backlog";
+import { ProjectCombobox } from "@/components/projects/project-combobox";
 import { ProjectDocuments } from "@/components/projects/project-documents";
-import { ProjectList } from "@/components/projects/project-list";
-import { readProjectsListOpen, writeProjectsListOpen } from "@/lib/project-list-panel";
+import { ProjectListDialog } from "@/components/projects/project-list-dialog";
 import { ProjectCreateDialog } from "@/components/schedule/project-create-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import {
   Select,
   SelectContent,
@@ -63,6 +57,12 @@ import {
   type ProjectOrderWrite,
   type ProjectSortMode,
 } from "@/lib/vault-project";
+import {
+  readLastVaultPath,
+  readViewState,
+  writeLastVaultPath,
+  writeViewState,
+} from "@/lib/view-state";
 import { cn } from "@/lib/utils";
 import type { Config, Task, VaultProject } from "@/types";
 
@@ -113,6 +113,9 @@ interface Props {
 /** Sentinel for the status filter — Radix rejects an empty string as a value. */
 const ALL_BACKLOG_STATUSES = "__all__";
 
+/** The `view-state` slot this tab's selection is remembered in (T-0997). */
+const VIEW_ID = "projects";
+
 export function ProjectsView({
   configVersion,
   active,
@@ -120,32 +123,19 @@ export function ProjectsView({
   onProjectsChange,
 }: Props) {
   const t = useT();
-  // The list / detail split survives a restart, like the Docs tab's (T-0279).
-  const projectsSplit = useDefaultLayout({ id: "projects-split", storage: localStorage });
-  // Show / hide the project list (T-0744). The panel stays mounted and is
-  // collapsed through the group's API, like the Diagrams side panels:
-  // taking a panel away mid-session makes react-resizable-panels recompute
-  // the layout and squash its neighbour. Dragging the divider to nothing
-  // reports back through `onResize`, so the flag and the panel never disagree.
-  const listPanel = usePanelRef();
-  const [listOpen, setListOpen] = useState(() =>
-    readProjectsListOpen(typeof localStorage === "undefined" ? undefined : localStorage),
-  );
-  const changeListOpen = useCallback((open: boolean) => {
-    setListOpen(open);
-    writeProjectsListOpen(typeof localStorage === "undefined" ? undefined : localStorage, open);
-  }, []);
-  useEffect(() => {
-    const p = listPanel.current;
-    if (!p) return;
-    if (listOpen && p.isCollapsed()) p.expand();
-    else if (!listOpen && !p.isCollapsed()) p.collapse();
-  }, [listOpen, listPanel]);
   const [config, setConfig] = useState<Config | null>(null);
   const [projects, setProjects] = useState<VaultProject[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [slug, setSlug] = useState("");
-  const [search, setSearch] = useState("");
+  // The last selected project, remembered per machine and restored on the
+  // next launch (T-0997) — the same `view-state` slot the Schedule, Mindmap
+  // and Diagrams tabs keep their picker in, not a new mechanism.
+  const [slug, setSlug] = useState(() => readViewState(VIEW_ID).project);
+  /** Set after the first successful load, so the fallback below does not run
+   *  against the initial empty list and wipe a restored selection. */
+  const [loaded, setLoaded] = useState(false);
+  // The full list lives in a dialog now (T-0997); the combobox up top is the
+  // main route, this is where a project is managed, not just chosen.
+  const [listDialogOpen, setListDialogOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -184,10 +174,30 @@ export function ProjectsView({
       ]);
       setProjects(found);
       setTasks(allTasks);
+      setLoaded(true);
     } catch (e) {
       setError(String(e));
     }
   }, [vaultPath]);
+
+  // A vault switch must not inherit the old vault's selection: a slug is only
+  // unique within its vault, so restoring it blindly can land on a different
+  // project that happens to share the name. Same-vault restarts keep
+  // restoring — only a changed vault clears (Schedule/Mindmap/Diagrams do the
+  // same for their notes, T-0344).
+  useEffect(() => {
+    if (!vaultPath) return;
+    if (readLastVaultPath() !== vaultPath) setSlug("");
+    writeLastVaultPath(vaultPath);
+  }, [vaultPath]);
+
+  /** An explicit selection: switch the detail pane and remember it for the
+   *  next launch. Filtering (combobox or dialog input) never comes through
+   *  here, so typing cannot move the detail pane. */
+  const selectProject = useCallback((next: string) => {
+    setSlug(next);
+    writeViewState(VIEW_ID, "project", next);
+  }, []);
 
   useEffect(() => {
     void api.getConfig().then(setConfig);
@@ -218,41 +228,39 @@ export function ProjectsView({
     [tasks, projects],
   );
 
-  const visible = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+  // The ordered list feeds both pickers (T-0997). Text filtering happens inside
+  // the combobox dropdown and the list dialog, never here, so typing cannot
+  // switch the detail pane — only the Archived toggle narrows this.
+  const ordered = useMemo(() => {
     const matched = projects.filter((p) => {
       if (p.archived && !showArchived) return false;
-      if (!needle) return true;
-      return (
-        p.slug.toLowerCase().includes(needle) ||
-        p.name.toLowerCase().includes(needle) ||
-        p.summary.toLowerCase().includes(needle)
-      );
+      return true;
     });
     // The backend already returns "order" mode in this order; sorting again
     // keeps the list right when a pin or a drag is applied to the local array
     // (T-0231), and is what applies "name" mode at all (T-0278).
     return sortProjectsByMode(matched, sortMode);
-  }, [projects, search, showArchived, sortMode]);
+  }, [projects, showArchived, sortMode]);
 
-  // A search hides rows between the ones on screen, so a position computed
-  // from what is visible would not be the position the user meant; "name"
-  // mode has no position to compute one for in the first place (T-0278).
-  const reorderable = search.trim() === "" && sortMode === "order";
-  const activeVisible = useMemo(() => visible.filter((p) => !p.archived), [visible]);
-  const archivedVisible = useMemo(() => visible.filter((p) => p.archived), [visible]);
+  // Drag-reorder needs positions, which "name" mode does not have (T-0278).
+  // A filtered list hides rows between the ones on screen, so the dialog
+  // additionally disables drops while its own filter is non-empty.
+  const reorderable = sortMode === "order";
+  const activeOrdered = useMemo(() => ordered.filter((p) => !p.archived), [ordered]);
+  const archivedOrdered = useMemo(() => ordered.filter((p) => p.archived), [ordered]);
 
-  // Keep a selection even as the list is filtered or reloaded: an empty detail
-  // pane beside a populated list is a click the user never wants to make.
+  // Keep a selection as the list reloads: an empty detail pane beside a
+  // populated list is a click the user never wants to make. A stored slug the
+  // vault no longer holds falls back to the first project and is remembered
+  // as such; an empty vault keeps the slug untouched.
   useEffect(() => {
-    if (visible.length === 0) {
-      if (slug) setSlug("");
-      return;
+    if (!loaded || projects.length === 0) return;
+    if (!ordered.some((p) => p.slug === slug)) {
+      selectProject(ordered[0]?.slug ?? "");
     }
-    if (!visible.some((p) => p.slug === slug)) setSlug(visible[0].slug);
-  }, [visible, slug]);
+  }, [loaded, projects, ordered, slug, selectProject]);
 
-  const current = visible.find((p) => p.slug === slug) ?? null;
+  const current = ordered.find((p) => p.slug === slug) ?? null;
   /** One instant for every staleness check on the screen, refreshed when the
    * project list is — a shared space does not go stale between two renders,
    * and a per-row `new Date()` would make the memo below re-run forever. */
@@ -427,17 +435,22 @@ export function ProjectsView({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 border-b px-3 py-1.5">
-        <PanelToggle
-          side="left"
-          open={listOpen}
-          onToggle={() => changeListOpen(!listOpen)}
-          labels={{ hide: t("projects.view.hideList"), show: t("projects.view.showList") }}
-        />
-        <Input
-          value={search}
-          placeholder={t("projects.view.searchPlaceholder")}
-          className="h-8 max-w-64 text-sm"
-          onChange={(e) => setSearch(e.target.value)}
+        <Hint label={t("projects.view.projectList")}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 gap-1.5 px-2"
+            aria-label={t("projects.view.projectList")}
+            onClick={() => setListDialogOpen(true)}
+          >
+            <List className="size-3.5" />
+          </Button>
+        </Hint>
+        <ProjectCombobox
+          active={activeOrdered}
+          archived={archivedOrdered}
+          selected={slug}
+          onSelect={selectProject}
         />
         <Button
           size="sm"
@@ -490,66 +503,8 @@ export function ProjectsView({
         </div>
       )}
 
-      <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1" {...projectsSplit}>
-        {/* Pixel floors, not percentages: a percentage minimum grows with the
-          window and wastes space on wide screens, while these stay put
-          (T-0713). The default split is unchanged. */}
-        <ResizablePanel
-          id="projects-list"
-          panelRef={listPanel}
-          defaultSize={listOpen ? "34%" : "0%"}
-          minSize="200px"
-          collapsible
-          collapsedSize={0}
-          onResize={(size) => {
-            const collapsed = size.asPercentage === 0;
-            if (collapsed === listOpen) changeListOpen(!collapsed);
-          }}
-          className="min-h-0"
-        >
-          <div className="h-full overflow-y-auto">
-            {visible.length === 0 && (
-              <p className="p-4 text-sm text-muted-foreground">
-                {t("projects.view.emptyList")}
-              </p>
-            )}
-            <ProjectList
-              active={activeVisible}
-              archived={archivedVisible}
-              selected={slug}
-              counts={counts}
-              reorderable={reorderable}
-              onSelect={setSlug}
-              onTogglePin={togglePin}
-              onMove={applyOrder}
-            />
-
-            {orphans.length > 0 && (
-              <div className="border-b bg-muted/30 px-3 py-2">
-                <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                  <CircleAlert className="size-3" />
-                  {t("projects.view.orphansHeading")}
-                </p>
-                <ul className="mt-1 space-y-0.5">
-                  {orphans.map((o) => (
-                    <li key={o.project} className="text-[11px] text-muted-foreground">
-                      <span className="font-mono">{o.project}</span>{" "}
-                      {t(
-                        o.counts.total === 1
-                          ? "projects.view.orphanCountOne"
-                          : "projects.view.orphanCountOther",
-                        { count: o.counts.total },
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel id="projects-detail" defaultSize={listOpen ? "66%" : "100%"} minSize="320px" className="min-h-0">
-          {!current ? (
+      <div className="min-h-0 flex-1">
+        {!current ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               {t("projects.view.selectProject")}
             </div>
@@ -1104,15 +1059,27 @@ export function ProjectsView({
             </div>
             </div>
           )}
-        </ResizablePanel>
-      </ResizablePanelGroup>
+      </div>
 
+      <ProjectListDialog
+        open={listDialogOpen}
+        onOpenChange={setListDialogOpen}
+        active={activeOrdered}
+        archived={archivedOrdered}
+        selected={slug}
+        counts={counts}
+        reorderable={reorderable}
+        orphans={orphans}
+        onSelect={selectProject}
+        onTogglePin={togglePin}
+        onMove={applyOrder}
+      />
       <ProjectCreateDialog
         vaultPath={vaultPath}
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={(created) => {
-          setSlug(created);
+          selectProject(created);
           void refresh();
         }}
       />
