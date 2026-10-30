@@ -10,6 +10,7 @@ import {
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { HtmlPreview } from "@/components/docs/html-preview";
 import { type DocNotesPane, useNoteLayer } from "@/components/docs/use-note-layer";
+import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
 import { Button } from "@/components/ui/button";
 import { Hint } from "@/components/ui/hint";
 import { Markdown } from "@/components/ui/markdown";
@@ -27,6 +28,7 @@ import {
 } from "@/lib/docs/markdown";
 import { contentStamp } from "@/lib/docs/annotations";
 import { previewKindForPath } from "@/lib/docs/preview-kind";
+import { diagramKindOfText, parseFrontmatterScalars } from "@/lib/project-backlog";
 import { frontmatterOffset } from "@/lib/docs/rehype-line";
 import { PREVIEW_ZOOM, parsePreviewZoom, stepPreviewZoom } from "@/lib/docs/zoom";
 import { cn } from "@/lib/utils";
@@ -207,6 +209,18 @@ export function DocsPreview({
   const html = kind === "html";
   const text = kind === "text";
 
+  // A Markdown file whose frontmatter `type` names a diagram kind renders as
+  // that diagram (T-1000) — the same real view the Projects panes embed,
+  // frozen read-only. Anything else keeps the renderer it always had.
+  const diagramKind = useMemo(
+    () => (html || text || !content ? null : diagramKindOfText(content)),
+    [html, text, content],
+  );
+  const diagramTitle = useMemo(() => {
+    if (!diagramKind) return "";
+    return parseFrontmatterScalars(content).title?.trim() || basename(path);
+  }, [diagramKind, content, path]);
+
   // Frontmatter is lifted out before the renderer sees it, and Obsidian's
   // `![[file]]` embeds and `[[wikilink]]` document links are rewritten, since
   // neither is CommonMark. Anything with no kind of its own is read as
@@ -339,7 +353,7 @@ export function DocsPreview({
   // React's wheel handler is passive and could not stop the page scrolling
   // underneath the zoom.
   const scroller = useRef<HTMLDivElement>(null);
-  const zoomable = !html && !!content && !error;
+  const zoomable = !html && !diagramKind && !!content && !error;
   useEffect(() => {
     const el = scroller.current;
     if (!el || !zoomable) return;
@@ -367,7 +381,7 @@ export function DocsPreview({
   const getNoteRoot = useCallback(() => noteRoot, [noteRoot]);
   const getNoteDoc = useCallback(() => noteRoot?.ownerDocument ?? null, [noteRoot]);
   const noteLayer = useNoteLayer({
-    api: html ? undefined : notes,
+    api: html || diagramKind ? undefined : notes,
     getRoot: getNoteRoot,
     getDoc: getNoteDoc,
     stamp,
@@ -390,7 +404,7 @@ export function DocsPreview({
         <Hint label={path}>
           <span className="mr-1 min-w-0 flex-1 truncate text-xs text-muted-foreground">{path}</span>
         </Hint>
-        {!html && (
+        {!html && !diagramKind && (
           <>
             <Hint label={t("docs.preview.zoomOutHint")}>
               <Button
@@ -476,7 +490,8 @@ export function DocsPreview({
           </Button>
         </Hint>
       </div>
-      {/* The frame scrolls itself, so an HTML page gets the pane edge to edge. */}
+      {/* The frame scrolls itself, so an HTML page gets the pane edge to edge —
+          and a diagram fills it the way it fills the Projects panes. */}
       <div
         ref={scroller}
         className={cn(
@@ -485,7 +500,7 @@ export function DocsPreview({
           // content is prose unselectable (T-0294). Read-only text you cannot
           // copy out of is a document you have to open somewhere else.
           "select-text cursor-auto",
-          html && !error && content
+          (html && !error && content) || diagramKind
             ? "min-h-0 flex-1"
             : "min-h-0 flex-1 overflow-y-auto px-6 py-4",
         )}
@@ -520,7 +535,23 @@ export function DocsPreview({
             </pre>
           </div>
         )}
-        {!error && content && !html && !text && (
+        {!error && content && diagramKind && (
+          // A diagram note reads through the Projects panes' editor host,
+          // frozen read-only: the tab stays read-only, so no edit UI comes
+          // along. Keyed by the refresh as well, so the toolbar's refresh
+          // re-reads the note even when no file event arrives off the share.
+          <div key={`${path}|${refreshToken}`} className="flex h-full min-h-0 flex-col">
+            <DiagramEditorHost
+              kind={diagramKind}
+              path={path}
+              title={diagramTitle}
+              project=""
+              configVersion={0}
+              readOnly
+            />
+          </div>
+        )}
+        {!error && content && !html && !text && !diagramKind && (
           // `zoom` rather than a transform: the text re-flows at the new size,
           // so a zoomed document still fits the pane instead of overflowing it.
           // Keyed by the refresh, so a re-read also redraws the diagrams — a

@@ -61,18 +61,25 @@ interface Props {
   project: string;
   /** Bumped by the app shell after settings are saved. */
   configVersion: number;
+  /** True in a read-only host (the Docs tab, T-1000): the editor is frozen
+   * through `locked`, the side panel starts closed, and no prompt-copy
+   * callback is wired, so nothing here can write. */
+  readOnly?: boolean;
   /** The note vanished (or the reader backed out): clear the selection. */
-  onClose: () => void;
+  onClose?: () => void;
   /** Jump to the Diagrams tab with this note (rendered in each view's toolbar). */
-  onOpenInDiagrams: () => void;
+  onOpenInDiagrams?: () => void;
   /** Open this note in Obsidian (rendered in each view's toolbar). */
-  onOpenInObsidian: () => void;
+  onOpenInObsidian?: () => void;
 }
 
 /**
  * Hosts one diagram editor view inside the Projects tab's Backlog and
  * Documents panes (T-0738): the same real editor the Diagrams tab embeds
  * (T-0680), with the same `{ configVersion, embedded }` props.
+ *
+ * The Docs tab reuses this for diagram files (T-1000) with `readOnly`: the
+ * same view, frozen — reading only, no edit UI brought along.
  *
  * Only the view matching `kind` is mounted — never all nine. The view owns
  * its debounced save; the host adds nothing to it. `locked` stays false
@@ -88,8 +95,8 @@ interface Props {
  * The parent gives this its height (`min-h-0 flex-1`); the view fills it with
  * `h-full`, so no page-level scroll appears.
  */
-export function DiagramEditorHost({ kind, path, title, project, configVersion, onClose, onOpenInDiagrams, onOpenInObsidian }: Props) {
-  const [sidePanelOpen, setSidePanelOpen] = useState(true);
+export function DiagramEditorHost({ kind, path, title, project, configVersion, readOnly, onClose, onOpenInDiagrams, onOpenInObsidian }: Props) {
+  const [sidePanelOpen, setSidePanelOpen] = useState(!readOnly);
   // The editor's pending save, flushed before the prompt is copied so the
   // agent reads what is on screen (same as the Diagrams tab's toolbar copy).
   const flushRef = useRef<(() => Promise<void>) | null>(null);
@@ -100,20 +107,28 @@ export function DiagramEditorHost({ kind, path, title, project, configVersion, o
     path,
     title,
     onPathChange: (next: string) => {
-      if (!next) onClose();
+      if (!next) onClose?.();
     },
-    locked: false,
+    // A read-only host freezes the editor through the same lock an AI run
+    // uses; `readOnly` tells the views no agent is behind it (T-1000).
+    locked: !!readOnly,
+    readOnly,
     registerFlush: (flush) => {
       flushRef.current = flush;
     },
     reloadToken: 0,
     sidePanelOpen,
     onSidePanelOpenChange: setSidePanelOpen,
-    onCopyPrompt: async () => {
-      await flushRef.current?.();
-      const config = await api.getConfig();
-      await api.copyDiagramEditPrompt(path, "", config.settings.diagram_confirm ?? false);
-    },
+    // No prompt copy in a read-only host: there is nothing to hand an agent.
+    ...(!readOnly
+      ? {
+          onCopyPrompt: async () => {
+            await flushRef.current?.();
+            const config = await api.getConfig();
+            await api.copyDiagramEditPrompt(path, "", config.settings.diagram_confirm ?? false);
+          },
+        }
+      : {}),
     onOpenInDiagrams,
     onOpenInObsidian,
   };

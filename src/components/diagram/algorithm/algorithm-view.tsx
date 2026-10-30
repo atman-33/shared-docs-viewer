@@ -145,6 +145,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
   // goes quiet and the toolbar, canvas and side panel stop answering. Read
   // through a ref so the callbacks below stay stable.
   const locked = embedded.locked;
+  const readOnly = embedded.readOnly ?? false;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
   const registerFlush = useRef(embedded.registerFlush);
@@ -927,7 +928,7 @@ export function AlgorithmView({ configVersion, embedded }: Props) {
             <EmbeddedDiagramActions embedded={embedded} />
             <div className="ml-auto flex items-center gap-1.5">
               <EmbeddedCopyPrompt embedded={embedded} />
-              {locked && (
+              {locked && !readOnly && (
                 <span className="text-[11px] text-amber-500">{t("diagram.aiPanel.lockedHint")}</span>
               )}
               {status && (

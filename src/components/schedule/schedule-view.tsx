@@ -202,6 +202,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
   // The Diagrams tab owns the AI edit (T-0685); while one runs the agent holds
   // the file and this view goes read-only.
   const aiRunning = embedded?.locked ?? false;
+  const readOnly = embedded?.readOnly ?? false;
   const locale = useLocale();
   const t = useT();
 
@@ -1043,7 +1044,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
           }}
         >
           <Hint
-            label={aiRunning ? t("schedule.view.aiRunningHint") : t("schedule.view.renameHint")}
+            label={aiRunning && !readOnly ? t("schedule.view.aiRunningHint") : t("schedule.view.renameHint")}
             disabled={!path || aiRunning}
           >
             <PopoverTrigger asChild>
@@ -1248,7 +1249,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
             onPatch={(patch) => void patchSettings(patch)}
           />
           <Hint
-            label={aiRunning ? t("schedule.view.aiRunningHint") : t("schedule.view.deleteHint")}
+            label={aiRunning && !readOnly ? t("schedule.view.aiRunningHint") : t("schedule.view.deleteHint")}
             disabled={!path || aiRunning}
           >
             <Button
