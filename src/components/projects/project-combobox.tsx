@@ -69,19 +69,23 @@ export function ProjectCombobox({
     >
       <CheckIcon
         className={cn(
-          "size-3.5",
+          "size-3.5 shrink-0",
           p.slug === selected ? "opacity-100" : "opacity-0",
         )}
       />
-      <span className="truncate">{p.name}</span>
-      <span className="truncate font-mono text-[11px] text-muted-foreground">
-        {p.slug}
-      </span>
-      {p.archived && (
-        <span className="shrink-0 rounded bg-muted-foreground/15 px-1 text-[10px] uppercase text-muted-foreground">
-          {t("projects.list.archivedBadge")}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-xs">{p.name}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="truncate font-mono text-[11px] text-muted-foreground">
+            {p.slug}
+          </span>
+          {p.archived && (
+            <span className="shrink-0 rounded bg-muted-foreground/15 px-1 text-[10px] uppercase text-muted-foreground">
+              {t("projects.list.archivedBadge")}
+            </span>
+          )}
         </span>
-      )}
+      </span>
     </CommandItem>
   );
 
@@ -105,7 +109,7 @@ export function ProjectCombobox({
           <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
+      <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-0" align="start">
         <Command
           filter={(value, search) =>
             value.toLowerCase().includes(search.toLowerCase().trim()) ? 1 : 0
