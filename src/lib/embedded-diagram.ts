@@ -19,6 +19,10 @@ export interface EmbeddedDiagram {
   /** True while an AI edit holds the file (T-0685): the editor must not write,
    * and should stop answering gestures, keys and toolbar buttons. */
   locked: boolean;
+  /** True in a read-only host (the Docs tab, T-1000): the host also sets
+   * `locked`, so the editor cannot write — this only tells the views that no
+   * agent holds the file, so they hide the "AI edit running" hint. */
+  readOnly?: boolean;
   /**
    * The editor hands the host a function that writes its pending (debounced)
    * save now, or `null` when it goes away. The host calls it before it starts
