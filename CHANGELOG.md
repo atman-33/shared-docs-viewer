@@ -2,7 +2,7 @@
 
 ## 0.170.0 (2026-10-30)
 
-- **The Diagrams tab no longer edits with AI in the app** (T-0998). The ✨ edit button, the ⚙ agent settings and the side panel are gone: editing moved to the terminal / desktop session (Claude Code, OpenCode), and the toolbar keeps only the 📋 button that copies the `diagram-edit` prompt for pasting there. On-screen edits are saved before the copy. Diagram notes opened from the projects Backlog (and Documents) panes carry the same 📋 copy button in every editor toolbar, so the prompt is one click away wherever a diagram is shown. The backend runner and the `diagram-edit` skill stay as they are.
+- **The Diagrams tab no longer edits with AI in the app** (T-0998). The ✨ edit button, the ⚙ agent settings and the side panel are gone: editing moved to the terminal / desktop session (Claude Code, OpenCode). Every editor toolbar — in the Diagrams tab and in the projects Backlog (and Documents) panes alike — carries the 📋 button at its right end, copying the `diagram-edit` prompt for pasting there. On-screen edits are saved before the copy, so the prompt is one click away wherever a diagram is shown. The backend runner and the `diagram-edit` skill stay as they are.
 
 ## 0.169.0 (2026-10-30)
 

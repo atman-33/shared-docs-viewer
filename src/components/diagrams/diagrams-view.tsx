@@ -3,7 +3,6 @@ import { listen } from "@tauri-apps/api/event";
 import { useDefaultLayout, usePanelRef } from "react-resizable-panels";
 import { ChevronDown, ChevronRight, FolderPlus, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/graph/confirm-dialog";
-import { CopyPromptButton } from "@/components/copy-prompt-button";
 import { PanelToggle } from "@/components/diagram/panel-frame";
 import { FlowView } from "@/components/diagram/flow/flow-view";
 import { PfdView } from "@/components/diagram/pfd/pfd-view";
@@ -367,7 +366,8 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
   // Editing moved to the terminal / desktop session (T-0998): the app only
   // copies the prompt. The instruction is empty on purpose — the owner gives
   // it in the following messages — and the file is flushed first so the agent
-  // reads what is on screen.
+  // reads what is on screen. Handed to every editor through `embedded`, so the
+  // button sits in the same toolbar spot in both tabs.
   const copyAiPrompt = async () => {
     if (!current) return;
     await flushEditor();
@@ -400,6 +400,7 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
     reloadToken: 0,
     sidePanelOpen: isPanelOpen(hiddenPanels, which, "right"),
     onSidePanelOpenChange: (open: boolean) => setPanelOpen(which, "right", open),
+    onCopyPrompt: copyAiPrompt,
     registerFlush: (flush: (() => Promise<void>) | null) => {
       flushers.current[which] = flush;
     },
@@ -536,14 +537,6 @@ export function DiagramsView({ configVersion, projectsVersion = 0, focus }: Prop
         </Hint>
         {error && <span className="max-w-96 truncate text-[11px] text-destructive">{error}</span>}
         <div className="ml-auto flex items-center gap-1.5">
-          {/* Editing moved to the terminal / desktop session (T-0998): the
-              toolbar keeps only the prompt copy, so the owner pastes it into
-              Claude Code or OpenCode by hand. */}
-          <CopyPromptButton
-            label={t("diagram.aiPanel.copyPrompt")}
-            disabled={!current}
-            onCopy={copyAiPrompt}
-          />
           <PanelToggle
             side="right"
             open={!kind || isPanelOpen(hiddenPanels, kind, "right")}
