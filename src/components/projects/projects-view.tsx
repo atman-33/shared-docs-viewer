@@ -434,7 +434,11 @@ export function ProjectsView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-2 border-b px-3 py-1.5">
+      {/* Unified picker + pane switcher (T-0999, 案B): the project combobox
+        and the Overview/Documents/Backlog tabs share this row, so the backlog
+        pane gains a full row of height. List controls (archived toggle, sort,
+        list reload) move to the sub-header below. */}
+      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-1.5">
         <Hint label={t("projects.view.projectList")}>
           <Button
             size="sm"
@@ -452,40 +456,78 @@ export function ProjectsView({
           selected={slug}
           onSelect={selectProject}
         />
-        <Button
-          size="sm"
-          variant={showArchived ? "secondary" : "ghost"}
-          className="h-8 gap-1.5"
-          onClick={() => setShowArchived((v) => !v)}
-        >
-          <Archive className="size-3.5" />
-          {t("projects.view.archivedToggle")}
-        </Button>
-        <Hint
-          label={
-            sortMode === "order"
-              ? t("projects.view.sortByPosition")
-              : t("projects.view.sortByName")
-          }
-        >
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 gap-1.5"
-            onClick={() => {
-              const next = sortMode === "order" ? "name" : "order";
-              setSortMode(next);
-              writeProjectSortMode(next);
-            }}
-          >
-            <ArrowUpDown className="size-3.5" />
-            {sortMode === "order" ? t("projects.view.sortOrder") : t("projects.view.sortName")}
-          </Button>
-        </Hint>
-        <Button size="sm" variant="ghost" className="h-8 gap-1.5" onClick={() => void load()}>
-          <RefreshCw className="size-3.5" />
-          {t("projects.view.refresh")}
-        </Button>
+        {current && (
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              size="sm"
+              variant={pane === "overview" ? "secondary" : "ghost"}
+              className="h-8"
+              onClick={() => setPane("overview")}
+            >
+              {t("projects.view.overviewTab")}
+            </Button>
+            <Button
+              size="sm"
+              variant={pane === "documents" ? "secondary" : "ghost"}
+              className="h-8"
+              onClick={() => setPane("documents")}
+            >
+              {t("projects.view.documentsTab")}
+            </Button>
+            <Button
+              size="sm"
+              variant={pane === "backlog" ? "secondary" : "ghost"}
+              className="h-8"
+              onClick={() => setPane("backlog")}
+            >
+              {t("projects.view.backlogTab")}
+            </Button>
+          </div>
+        )}
+        {/* Overview has no Refresh of its own: its content is the
+          project list, which the sub-header's reload button refreshes. */}
+        {current && pane !== "overview" && (
+          <div className="flex shrink-0 items-center gap-2">
+            {pane === "backlog" && (
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                {t("projects.view.backlog.filterLabel")}
+                <Select
+                  value={backlogStatusFilter || ALL_BACKLOG_STATUSES}
+                  onValueChange={(v) =>
+                    setBacklogStatusFilter(v === ALL_BACKLOG_STATUSES ? "" : v)
+                  }
+                >
+                  <SelectTrigger
+                    size="sm"
+                    className="h-6 w-28 px-2 py-0 text-[11px] data-[size=sm]:h-6 [&_svg:not([class*='size-'])]:size-3"
+                  >
+                    <SelectValue placeholder={t("projects.view.backlog.filterAll")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_BACKLOG_STATUSES}>
+                      {t("projects.view.backlog.filterAll")}
+                    </SelectItem>
+                    {BACKLOG_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 gap-1.5"
+              disabled={paneLoading}
+              onClick={() => setPaneRefresh((n) => n + 1)}
+            >
+              <RefreshCw className={cn("size-3.5", paneLoading && "animate-spin")} />
+              {t("projects.view.refresh")}
+            </Button>
+          </div>
+        )}
         <Button size="sm" className="ml-auto h-8 gap-1.5" onClick={() => setCreateOpen(true)}>
           <FolderPlus className="size-3.5" />
           {t("projects.view.newProject")}
@@ -510,11 +552,11 @@ export function ProjectsView({
             </div>
           ) : (
             <div className="flex h-full min-h-0 flex-col">
-              {/* Fixed header (T-0737): the name (read-only here — editing
+              {/* Sub-header (T-0999, 案B): the name (read-only here — editing
                 lives in the Overview pane below), the status and update time,
-                and the navigation buttons. It stays visible while the body
-                scrolls, and wraps instead of breaking on narrow widths. */}
-              <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-2">
+                and icon-only navigation with tooltips. One compact row; every
+                destination stays reachable. */}
+              <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-1.5">
                 <h2 className="mr-1 min-w-0 truncate text-base font-semibold">
                   {current.name}
                 </h2>
@@ -528,141 +570,128 @@ export function ProjectsView({
                     time: current.updated ? timeAgo(current.updated) : "—",
                   })}
                 </span>
-                <div className="ml-auto flex flex-wrap items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 gap-1.5"
-                    onClick={() => {
-                      if (hasReadme) void api.openInObsidian(`${current.path}/README.md`);
-                      else void api.openExplorer(current.path);
-                    }}
+                <div className="ml-auto flex flex-wrap items-center gap-1">
+                  <Hint label={t("projects.view.archivedToggle")}>
+                    <Button
+                      size="sm"
+                      variant={showArchived ? "secondary" : "ghost"}
+                      className="h-7 w-7 p-0"
+                      aria-label={t("projects.view.archivedToggle")}
+                      onClick={() => setShowArchived((v) => !v)}
+                    >
+                      <Archive className="size-3.5" />
+                    </Button>
+                  </Hint>
+                  <Hint
+                    label={
+                      sortMode === "order"
+                        ? t("projects.view.sortByPosition")
+                        : t("projects.view.sortByName")
+                    }
                   >
-                    <FolderOpen className="size-3.5" />
-                    {hasReadme ? t("projects.view.openReadme") : t("projects.view.openFolder")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 gap-1.5"
-                    onClick={() => onNavigate("tasks", current.slug)}
-                  >
-                    <ListTodo className="size-3.5" />
-                    {t("projects.view.tasksButton")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 gap-1.5"
-                    onClick={() => onNavigate("diagrams", current.slug)}
-                  >
-                    <Shapes className="size-3.5" />
-                    {t("projects.view.diagramsButton")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 gap-1.5"
-                    disabled={!defaultRepo}
-                    onClick={() => defaultRepo && onNavigate("repos", defaultRepo.path)}
-                  >
-                    <GitBranch className="size-3.5" />
-                    {t("projects.view.repoButton")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={current.archived ? "outline" : "ghost"}
-                    className="h-7 gap-1.5"
-                    onClick={() => setArchiveOpen(true)}
-                  >
-                    {current.archived ? (
-                      <>
-                        <ArchiveRestore className="size-3.5" />
-                        {t("projects.view.restore")}
-                      </>
-                    ) : (
-                      <>
-                        <Archive className="size-3.5" />
-                        {t("projects.view.archive")}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Overview / Documents / Backlog (T-0714, backlog in T-0715).
-                The switcher sits directly under the header, so it stays
-                visible no matter how far the body has scrolled. */}
-              <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-1">
-                <Button
-                  size="sm"
-                  variant={pane === "overview" ? "secondary" : "ghost"}
-                  className="h-7"
-                  onClick={() => setPane("overview")}
-                >
-                  {t("projects.view.overviewTab")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={pane === "documents" ? "secondary" : "ghost"}
-                  className="h-7"
-                  onClick={() => setPane("documents")}
-                >
-                  {t("projects.view.documentsTab")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={pane === "backlog" ? "secondary" : "ghost"}
-                  className="h-7"
-                  onClick={() => setPane("backlog")}
-                >
-                  {t("projects.view.backlogTab")}
-                </Button>
-                {/* Overview has no Refresh of its own: its content is the
-                  project list, which the toolbar's Refresh already reloads. */}
-                {pane !== "overview" && (
-                  <div className="ml-auto flex items-center gap-2">
-                    {pane === "backlog" && (
-                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        {t("projects.view.backlog.filterLabel")}
-                        <Select
-                          value={backlogStatusFilter || ALL_BACKLOG_STATUSES}
-                          onValueChange={(v) =>
-                            setBacklogStatusFilter(v === ALL_BACKLOG_STATUSES ? "" : v)
-                          }
-                        >
-                          <SelectTrigger
-                            size="sm"
-                            className="h-6 w-28 px-2 py-0 text-[11px] data-[size=sm]:h-6 [&_svg:not([class*='size-'])]:size-3"
-                          >
-                            <SelectValue placeholder={t("projects.view.backlog.filterAll")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ALL_BACKLOG_STATUSES}>
-                              {t("projects.view.backlog.filterAll")}
-                            </SelectItem>
-                            {BACKLOG_STATUSES.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </label>
-                    )}
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 gap-1.5"
-                      disabled={paneLoading}
-                      onClick={() => setPaneRefresh((n) => n + 1)}
+                      className="h-7 gap-1 px-2"
+                      aria-label={
+                        sortMode === "order"
+                          ? t("projects.view.sortByPosition")
+                          : t("projects.view.sortByName")
+                      }
+                      onClick={() => {
+                        const next = sortMode === "order" ? "name" : "order";
+                        setSortMode(next);
+                        writeProjectSortMode(next);
+                      }}
                     >
-                      <RefreshCw className={cn("size-3.5", paneLoading && "animate-spin")} />
-                      {t("projects.view.refresh")}
+                      <ArrowUpDown className="size-3.5" />
+                      {sortMode === "order" ? t("projects.view.sortOrder") : t("projects.view.sortName")}
                     </Button>
-                  </div>
-                )}
+                  </Hint>
+                  <Hint label={t("projects.view.refresh")}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0"
+                      aria-label={t("projects.view.refresh")}
+                      onClick={() => void load()}
+                    >
+                      <RefreshCw className="size-3.5" />
+                    </Button>
+                  </Hint>
+                  <span className="mx-0.5 h-4 w-px shrink-0 bg-border" aria-hidden="true" />
+                  <Hint
+                    label={hasReadme ? t("projects.view.openReadme") : t("projects.view.openFolder")}
+                  >
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      aria-label={hasReadme ? t("projects.view.openReadme") : t("projects.view.openFolder")}
+                      onClick={() => {
+                        if (hasReadme) void api.openInObsidian(`${current.path}/README.md`);
+                        else void api.openExplorer(current.path);
+                      }}
+                    >
+                      <FolderOpen className="size-3.5" />
+                    </Button>
+                  </Hint>
+                  <Hint label={t("projects.view.tasksButton")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      aria-label={t("projects.view.tasksButton")}
+                      onClick={() => onNavigate("tasks", current.slug)}
+                    >
+                      <ListTodo className="size-3.5" />
+                    </Button>
+                  </Hint>
+                  <Hint label={t("projects.view.diagramsButton")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      aria-label={t("projects.view.diagramsButton")}
+                      onClick={() => onNavigate("diagrams", current.slug)}
+                    >
+                      <Shapes className="size-3.5" />
+                    </Button>
+                  </Hint>
+                  <Hint label={t("projects.view.repoButton")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 w-7 p-0"
+                      aria-label={t("projects.view.repoButton")}
+                      disabled={!defaultRepo}
+                      onClick={() => defaultRepo && onNavigate("repos", defaultRepo.path)}
+                    >
+                      <GitBranch className="size-3.5" />
+                    </Button>
+                  </Hint>
+                  <Hint
+                    label={current.archived ? t("projects.view.restore") : t("projects.view.archive")}
+                  >
+                    <Button
+                      size="sm"
+                      variant={current.archived ? "outline" : "ghost"}
+                      className="h-7 w-7 p-0"
+                      aria-label={current.archived ? t("projects.view.restore") : t("projects.view.archive")}
+                      onClick={() => setArchiveOpen(true)}
+                    >
+                      {current.archived ? (
+                        <ArchiveRestore className="size-3.5" />
+                      ) : (
+                        <Archive className="size-3.5" />
+                      )}
+                    </Button>
+                  </Hint>
+                </div>
               </div>
+
+              {/* Pane switcher lives in the unified row above (T-0999) — this
+                space is gone, and the backlog pane below gains its height. */}
 
               {/* The only scrolling region: Overview scrolls as a page, while
                 Documents / Backlog scroll inside themselves (T-0737). */}

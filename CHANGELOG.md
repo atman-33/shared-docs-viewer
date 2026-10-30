@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.167.0 (2026-10-30)
+
+- **The Projects tab's picker and pane switcher now share one row** (T-0999, stacked on T-0997). The project combobox and the Overview / Documents / Backlog tabs sit in the unified top row with the Status filter and pane Refresh, and the sub-header below keeps only the project name, status, update time and icon-only buttons (list controls plus README / Tasks / Diagrams / Repo / Archive, each with a tooltip). The backlog pane gains a full row of vertical space; every navigation stays reachable.
+
 ## 0.166.0 (2026-10-30)
 
 - **The Projects tab's project selection moved into the top toolbar** (T-0997). The left project list is gone: its place in the toolbar now holds a button that opens the full list (pins, drag-reorder, archived section, orphan report) as a dialog, and the Search box is a combobox that lists every project for a typed filter to cut through. The last selected project is remembered per machine and restored on the next launch; typing in either picker no longer switches the detail pane, and a vault switch still starts from the first project instead of inheriting the old vault's selection.
