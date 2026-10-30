@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ArrowLeft, BookOpen, Shapes } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { DocsPreview, type UnresolvedWikiLink } from "@/components/docs/docs-preview";
 import { ImagePreview } from "@/components/docs/image-preview";
 import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
@@ -276,16 +276,6 @@ export function ProjectDocuments({
           ) : showImage ? (
             <>
               <div className="flex items-center gap-1 border-b px-2 py-1">
-                <Hint label={t("projects.view.docs.backToList")}>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("projects.view.docs.backToList")}
-                    onClick={backToList}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                </Hint>
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                   {dir ? docLabel(dir, selected) : selected}
                 </span>
@@ -310,39 +300,6 @@ export function ProjectDocuments({
             </>
           ) : showDiagram ? (
             <>
-              <div className="flex items-center gap-1 border-b px-2 py-1">
-                <Hint label={t("projects.view.docs.backToList")}>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("projects.view.docs.backToList")}
-                    onClick={backToList}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                </Hint>
-                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                  {dir ? docLabel(dir, selected) : selected}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
-                  onClick={() => onOpenDiagrams(selected)}
-                >
-                  <Shapes className="size-3.5" />
-                  {t("projects.view.backlog.openInDiagrams")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
-                  onClick={() => openInObsidian(selected)}
-                >
-                  <BookOpen className="size-3.5" />
-                  {t("projects.view.docs.openInObsidian")}
-                </Button>
-              </div>
               <DiagramEditorHost
                 kind={showDiagram.kind}
                 path={selected}
@@ -350,21 +307,13 @@ export function ProjectDocuments({
                 project={slug}
                 configVersion={configVersion}
                 onClose={backToList}
+                onOpenInDiagrams={() => onOpenDiagrams(selected)}
+                onOpenInObsidian={() => openInObsidian(selected)}
               />
             </>
           ) : (
             <>
               <div className="flex items-center gap-1 border-b px-2 py-1">
-                <Hint label={t("projects.view.docs.backToList")}>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("projects.view.docs.backToList")}
-                    onClick={backToList}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                </Hint>
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                   {dir ? docLabel(dir, selected) : selected}
                 </span>

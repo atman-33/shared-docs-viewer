@@ -67,7 +67,6 @@ export const projectsEn = {
   "projects.view.docs.noDocuments":
     "No readable documents yet — README.md, prd.md and the notes under dev-notes/ and shared/ show up here.",
   "projects.view.docs.pickPrompt": "Pick a document to read it. Editing stays in Obsidian.",
-  "projects.view.docs.backToList": "Back to the document list",
   "projects.view.docs.openInObsidian": "Open in Obsidian",
   "projects.view.docs.resolveFailed": "This project has no folder under projects/.",
   "projects.view.docs.linkOutsideHint":

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ArrowLeft, BookOpen, Image as ImageIcon, Shapes } from "lucide-react";
+import { BookOpen, Image as ImageIcon, Shapes } from "lucide-react";
 import { DocsPreview, type UnresolvedWikiLink } from "@/components/docs/docs-preview";
 import { ImagePreview } from "@/components/docs/image-preview";
 import { DiagramEditorHost } from "@/components/projects/diagram-editor-host";
@@ -387,20 +387,6 @@ export function ProjectBacklog({
           ) : currentIsImage ? (
             <>
               <div className="flex items-center gap-1 border-b px-2 py-1">
-                <Hint label={t("projects.view.docs.backToList")}>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("projects.view.docs.backToList")}
-                    onClick={() => {
-                      setLinkHint("");
-                      setWikiHint(null);
-                      setSelectedFile("");
-                    }}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                </Hint>
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                   {backlogDir ? relativeWithin(backlogDir, current.entry.path) : current.entry.path}
                 </span>
@@ -425,43 +411,6 @@ export function ProjectBacklog({
             </>
           ) : currentIsDiagram ? (
             <>
-              <div className="flex items-center gap-1 border-b px-2 py-1">
-                <Hint label={t("projects.view.docs.backToList")}>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("projects.view.docs.backToList")}
-                    onClick={() => {
-                      setLinkHint("");
-                      setWikiHint(null);
-                      setSelectedFile("");
-                    }}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                </Hint>
-                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                  {backlogDir ? relativeWithin(backlogDir, current.entry.path) : current.entry.path}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
-                  onClick={() => onOpenDiagrams(current.entry.path)}
-                >
-                  <Shapes className="size-3.5" />
-                  {t("projects.view.backlog.openInDiagrams")}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
-                  onClick={() => openInObsidian(current.entry.path)}
-                >
-                  <BookOpen className="size-3.5" />
-                  {t("projects.view.docs.openInObsidian")}
-                </Button>
-              </div>
               {isDiagramKind(current.diagramKind) ? (
                 <DiagramEditorHost
                   kind={current.diagramKind}
@@ -474,6 +423,8 @@ export function ProjectBacklog({
                     setWikiHint(null);
                     setSelectedFile("");
                   }}
+                  onOpenInDiagrams={() => onOpenDiagrams(current.entry.path)}
+                  onOpenInObsidian={() => openInObsidian(current.entry.path)}
                 />
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
@@ -488,20 +439,6 @@ export function ProjectBacklog({
           ) : (
             <>
               <div className="flex items-center gap-1 border-b px-2 py-1">
-                <Hint label={t("projects.view.docs.backToList")}>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    aria-label={t("projects.view.docs.backToList")}
-                    onClick={() => {
-                      setLinkHint("");
-                      setWikiHint(null);
-                      setSelectedFile("");
-                    }}
-                  >
-                    <ArrowLeft />
-                  </Button>
-                </Hint>
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                   {backlogDir ? relativeWithin(backlogDir, selectedFile) : selectedFile}
                 </span>

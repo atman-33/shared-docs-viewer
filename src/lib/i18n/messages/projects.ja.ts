@@ -70,7 +70,6 @@ export const projectsJa: Partial<Record<MessageKey, string>> = {
   "projects.view.docs.noDocuments":
     "読めるドキュメントはまだありません — README.md、prd.md、dev-notes/ や shared/ 配下のノートがここに表示されます。",
   "projects.view.docs.pickPrompt": "ドキュメントを選ぶと読めます。編集は Obsidian で行ってください。",
-  "projects.view.docs.backToList": "ドキュメント一覧に戻る",
   "projects.view.docs.openInObsidian": "Obsidian で開く",
   "projects.view.docs.resolveFailed": "このプロジェクトのフォルダが projects/ 配下にありません。",
   "projects.view.docs.linkOutsideHint":

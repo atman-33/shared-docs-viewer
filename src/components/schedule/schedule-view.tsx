@@ -22,6 +22,7 @@ import { TimelineGrid } from "@/components/schedule/timeline-grid";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Hint } from "@/components/ui/hint";
+import { EmbeddedDiagramActions } from "@/components/projects/embedded-diagram-actions";
 import { SidePanel } from "@/components/diagram/panel-frame";
 import type { EmbeddedDiagram } from "@/lib/embedded-diagram";
 import { Input } from "@/components/ui/input";
@@ -1074,6 +1075,15 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
           </PopoverContent>
         </Popover>
 
+          </>
+        )}
+
+        {embedded && (
+          <>
+            <span className="truncate text-xs font-medium">
+              {files.find((f) => f.path === path)?.title ?? embedded.title ?? ""}
+            </span>
+            <EmbeddedDiagramActions embedded={embedded} />
           </>
         )}
 

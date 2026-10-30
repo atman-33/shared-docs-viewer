@@ -151,6 +151,12 @@ export function ProjectsView({
   // Kept across projects — the panes themselves are remounted per project,
   // so no document leaks over.
   const [pane, setPane] = useState<"overview" | "documents" | "backlog">("overview");
+  // Panes visited so far (T-1005): a visited pane stays mounted and is only
+  // hidden, so the selected item and file survive tab switches.
+  const [visited, setVisited] = useState({ overview: true, documents: false, backlog: false });
+  useEffect(() => {
+    setVisited((v) => (v[pane] ? v : { ...v, [pane]: true }));
+  }, [pane]);
   // Controls that live in the tab row but act on the Documents / Backlog
   // panes (T-0813): the Refresh button and the Backlog status filter.
   const [paneRefresh, setPaneRefresh] = useState(0);
@@ -693,38 +699,57 @@ export function ProjectsView({
               {/* Pane switcher lives in the unified row above (T-0999) — this
                 space is gone, and the backlog pane below gains its height. */}
 
-              {/* The only scrolling region: Overview scrolls as a page, while
-                Documents / Backlog scroll inside themselves (T-0737). */}
-              <div
-                className={cn(
-                  "min-h-0 flex-1 p-4",
-                  pane === "overview" ? "overflow-y-auto" : "overflow-hidden",
+              {/* Panes stay mounted once visited (T-1005): switching tabs
+                hides instead of unmounting, so the selected item and file
+                survive. `key={slug}` still remounts everything on a project
+                switch, so no document leaks over. Overview scrolls as a page,
+                while Documents / Backlog scroll inside themselves (T-0737). */}
+              <div className="min-h-0 flex-1 p-4">
+                {visited.documents && (
+                  <div
+                    className={cn(
+                      "h-full min-h-0 overflow-hidden",
+                      pane !== "documents" && "hidden",
+                    )}
+                  >
+                    <ProjectDocuments
+                      key={current.slug}
+                      vaultPath={vaultPath}
+                      slug={current.slug}
+                      configVersion={configVersion}
+                      refreshToken={paneRefresh}
+                      onLoadingChange={setPaneLoading}
+                      onOpenDiagrams={(diagramPath) => onNavigate("diagrams", current.slug, diagramPath)}
+                    />
+                  </div>
                 )}
-              >
-                {pane === "documents" ? (
-                  <ProjectDocuments
-                    key={current.slug}
-                    vaultPath={vaultPath}
-                    slug={current.slug}
-                    configVersion={configVersion}
-                    refreshToken={paneRefresh}
-                    onLoadingChange={setPaneLoading}
-                    onOpenDiagrams={(diagramPath) => onNavigate("diagrams", current.slug, diagramPath)}
-                  />
-                ) : pane === "backlog" ? (
-                  <ProjectBacklog
-                    key={current.slug}
-                    vaultPath={vaultPath}
-                    slug={current.slug}
-                    fallbackDir={current.path}
-                    tasks={tasks}
-                    configVersion={configVersion}
-                    refreshToken={paneRefresh}
-                    statusFilter={backlogStatusFilter}
-                    onLoadingChange={setPaneLoading}
-                    onOpenDiagrams={(diagramPath) => onNavigate("diagrams", current.slug, diagramPath)}
-                  />
-                ) : (
+                {visited.backlog && (
+                  <div
+                    className={cn(
+                      "h-full min-h-0 overflow-hidden",
+                      pane !== "backlog" && "hidden",
+                    )}
+                  >
+                    <ProjectBacklog
+                      key={current.slug}
+                      vaultPath={vaultPath}
+                      slug={current.slug}
+                      fallbackDir={current.path}
+                      tasks={tasks}
+                      configVersion={configVersion}
+                      refreshToken={paneRefresh}
+                      statusFilter={backlogStatusFilter}
+                      onLoadingChange={setPaneLoading}
+                      onOpenDiagrams={(diagramPath) => onNavigate("diagrams", current.slug, diagramPath)}
+                    />
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "h-full min-h-0",
+                    pane === "overview" ? "overflow-y-auto" : "hidden",
+                  )}
+                >
                   <div className="space-y-4">
                     {/* The heading already shows in the fixed header above, so
                       an archived project shows its description here with no
@@ -1084,7 +1109,7 @@ export function ProjectsView({
                 )}
               </section>
                   </div>
-              )}
+                </div>
             </div>
             </div>
           )}
