@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 
 use crate::storage;
@@ -114,45 +114,6 @@ fn candidates<'a>(preferred: &'a str, fallbacks: &[&'a str]) -> Vec<&'a str> {
         }
     }
     list
-}
-
-/// Create the (hidden) indicator window. Idempotent.
-pub fn create_window(app: &AppHandle) -> tauri::Result<()> {
-    if app.get_webview_window(WINDOW_LABEL).is_some() {
-        return Ok(());
-    }
-    let win = WebviewWindowBuilder::new(
-        app,
-        WINDOW_LABEL,
-        WebviewUrl::App("voice-indicator.html".into()),
-    )
-    .title("workhub voice indicator")
-    .inner_size(WINDOW_SIZE.0, WINDOW_SIZE.1)
-    .decorations(false)
-    .always_on_top(true)
-    .skip_taskbar(true)
-    // Non-focusable: the indicator must never steal focus from the app
-    // the transcript is about to be pasted into.
-    .focusable(false)
-    .focused(false)
-    .visible(false)
-    .shadow(false)
-    .transparent(true)
-    .background_color(tauri::window::Color(0, 0, 0, 0))
-    .build()?;
-
-    // The pill/preview is draggable (`data-tauri-drag-region` in the React
-    // app); remember where the user leaves it so it can be restored on the
-    // next show instead of always snapping back to bottom-center.
-    let app_handle = app.clone();
-    win.on_window_event(move |event| {
-        if let tauri::WindowEvent::Moved(pos) = event {
-            if let Some(state) = app_handle.try_state::<VoiceState>() {
-                *state.indicator_pos.lock().unwrap() = Some((pos.x, pos.y));
-            }
-        }
-    });
-    Ok(())
 }
 
 fn window(app: &AppHandle) -> Option<WebviewWindow> {
@@ -412,23 +373,6 @@ fn emit_error(app: &AppHandle, message: impl Into<String>) {
 
 /// Toggle entry point for the global hotkey: first press starts recording,
 /// second press stops it and transcribes. Called from the
-/// `tauri_plugin_global_shortcut` handler, which on Windows runs inside
-/// WndProc — everything here must be non-blocking; actual microphone and
-/// model I/O happens on a dedicated background thread.
-///
-/// A stop from here is the user's doing, so it holds meeting auto-capture
-/// (see `hold_auto`): the session ends and does not restart itself. Pressing
-/// again starts a manual session, which lowers the hold — ending it resumes
-/// auto-capture while the meeting is still active.
-pub fn toggle(app: &AppHandle) {
-    let phase = app.state::<VoiceState>().phase.lock().unwrap().clone();
-    match phase {
-        Phase::Idle | Phase::Error(_) => start_recording(app, false),
-        Phase::Recording => user_stop(app),
-        Phase::Transcribing => {} // busy — ignore extra presses
-    }
-}
-
 /// Starts a recording session; `auto` marks meeting-owned sessions (started
 /// by a meeting start or an auto-restart) in the log. Behaviour is identical
 /// either way — the flag only records provenance.
@@ -1083,12 +1027,6 @@ pub fn apply_shortcut(app: &AppHandle) {
         }
     }
     crate::diag!("voice: could not register any hotkey ({preferred})");
-}
-
-/// True when `pressed` is the hotkey currently registered for voice input.
-pub fn matches(app: &AppHandle, pressed: &Shortcut) -> bool {
-    app.try_state::<VoiceState>()
-        .is_some_and(|s| s.shortcut.lock().unwrap().as_ref() == Some(pressed))
 }
 
 #[cfg(test)]

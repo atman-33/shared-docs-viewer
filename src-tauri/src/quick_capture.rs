@@ -9,14 +9,13 @@
 //! for ~10s because the build waits on the very message pump it is holding
 //! (measured in the kakisute app; see its src-tauri/src/windows.rs).
 
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, WebviewWindow};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 
 use crate::models::WindowRect;
 use crate::storage;
 
 pub const WINDOW_LABEL: &str = "quick-capture";
-const DEFAULT_SIZE: (f64, f64) = (480.0, 360.0);
 /// Tried in order after the configured shortcut when registration fails
 /// (e.g. another app already holds the key).
 const FALLBACK_SHORTCUTS: &[&str] = &["Ctrl+Shift+N"];
@@ -38,50 +37,8 @@ fn candidates<'a>(preferred: &'a str, fallbacks: &[&'a str]) -> Vec<&'a str> {
     list
 }
 
-/// Create the (hidden) quick-capture window. Idempotent; called once at
-/// setup so the hotkey handler only ever needs to show it.
-pub fn create_window(app: &AppHandle) -> tauri::Result<()> {
-    if app.get_webview_window(WINDOW_LABEL).is_some() {
-        return Ok(());
-    }
-    // Only the size is carried over; the window always opens at the cursor
-    // (see `window_place`), so the saved position is deliberately ignored.
-    let (width, height) = storage::load()
-        .settings
-        .quick_capture_rect
-        .map_or(DEFAULT_SIZE, |r| (r.width, r.height));
-    WebviewWindowBuilder::new(
-        app,
-        WINDOW_LABEL,
-        WebviewUrl::App("quick-capture.html".into()),
-    )
-    .title("workhub — quick capture")
-    .inner_size(width, height)
-    // Below this the form's footer (Save to inbox) stops fitting.
-    .min_inner_size(360.0, 260.0)
-    .always_on_top(true)
-    .skip_taskbar(true)
-    .decorations(false)
-    .visible(false)
-    // The app is dark-only; paint the native window in the app background
-    // color so no white flashes before WebView2 renders (index.css --background).
-    .background_color(tauri::window::Color(0x14, 0x15, 0x1c, 0xff))
-    .build()?;
-    Ok(())
-}
-
 fn window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(WINDOW_LABEL)
-}
-
-/// Show the window next to the mouse cursor, focus it, and tell the frontend
-/// to (re)initialize the form from the clipboard.
-pub fn show(app: &AppHandle) {
-    let Some(win) = window(app) else { return };
-    crate::window_place::place_at_cursor(app, &win);
-    let _ = win.show();
-    let _ = win.set_focus();
-    let _ = app.emit_to(WINDOW_LABEL, "quick-capture://activate", ());
 }
 
 /// Remember the current window rect and hide. Persisting here (not on every
@@ -159,12 +116,6 @@ pub fn apply_shortcut(app: &AppHandle) {
         }
     }
     crate::diag!("quick-capture: could not register any hotkey ({preferred})");
-}
-
-/// True when `pressed` is the hotkey currently registered for quick capture.
-pub fn matches(app: &AppHandle, pressed: &Shortcut) -> bool {
-    app.try_state::<QuickCaptureState>()
-        .is_some_and(|s| s.0.lock().unwrap().as_ref() == Some(pressed))
 }
 
 #[cfg(test)]

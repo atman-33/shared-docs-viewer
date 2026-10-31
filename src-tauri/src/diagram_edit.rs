@@ -199,7 +199,7 @@ pub fn skill_files(app: &tauri::AppHandle) -> Option<(PathBuf, PathBuf)> {
             && ["diagrams.md", "mindmaps.md", "schedules.md"]
                 .iter()
                 .all(|f| rules.join(f).is_file()))
-        .then(|| (skill, rules))
+        .then_some((skill, rules))
     };
     let dir = app.path().resource_dir().ok()?;
     if let Some(found) = under(&dir) {

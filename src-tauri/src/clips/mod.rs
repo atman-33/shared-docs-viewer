@@ -22,7 +22,7 @@ mod window;
 use tauri::AppHandle;
 
 #[cfg(windows)]
-pub use window::{create_window, hide};
+pub use window::hide;
 
 /// Managed Tauri state: whether the listener is registered, and which window
 /// to hand focus back to when a snippet is picked.

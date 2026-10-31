@@ -27,8 +27,6 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-/// How often the scheduler wakes to check for a due slot.
-const TICK_SECS: u64 = 30 * 60;
 /// A run still going after this long is flagged as possibly stalled.
 const STALL_SECS: u64 = 15 * 60;
 const STATUS_EVENT: &str = "tidy:status";
@@ -163,23 +161,6 @@ fn archive_index_drift(vault: &Path) -> bool {
     stems.iter().any(|stem| !text.contains(stem))
 }
 
-// ---------------------------------------------------------------------------
-// Scheduling
-// ---------------------------------------------------------------------------
-
-/// Whether the current interval slot (phased from `anchor`) is still unconsumed.
-fn slot_due(now_secs: u64, anchor: u64, interval_hours: u32, last_run: Option<u64>) -> bool {
-    if now_secs < anchor {
-        return false;
-    }
-    let interval = interval_hours.max(1) as u64 * 3600;
-    let slot_start = anchor + ((now_secs - anchor) / interval) * interval;
-    match last_run {
-        Some(lr) => lr < slot_start,
-        None => true,
-    }
-}
-
 /// Persist `last_run` (and seed `anchor` if unset) so a fired slot isn't
 /// re-fired, plus the session id so a resume survives an app restart. Whole-file
 /// load/save; the small race with a concurrent UI save is acceptable for a
@@ -235,45 +216,6 @@ fn new_session_id() -> String {
         0x8000 | ((lo >> 48) & 0x3FFF),
         lo & 0xFFFF_FFFF_FFFF
     )
-}
-
-/// Starts the background scheduler thread. Sleeps first, so enabling tidy never
-/// fires instantly at app launch.
-pub fn start_scheduler(app: AppHandle) {
-    std::thread::spawn(move || loop {
-        std::thread::sleep(Duration::from_secs(TICK_SECS));
-        tick(&app);
-    });
-}
-
-fn tick(app: &AppHandle) {
-    let cfg = storage::load();
-    let t = &cfg.settings.tidy;
-    if !t.enabled {
-        return;
-    }
-    let vault = match resolve_vault(&cfg) {
-        Some(v) => v,
-        None => return,
-    };
-    // Don't stack runs.
-    {
-        let st = app.state::<TidyState>();
-        if st.0.lock().unwrap().is_running() {
-            return;
-        }
-    }
-    let anchor = t.anchor.unwrap_or_else(now);
-    if !slot_due(now(), anchor, t.interval_hours, t.last_run) {
-        return;
-    }
-    if has_work(&vault, t) {
-        // spawn_agent persists last_run itself.
-        let _ = spawn_agent(app.clone(), &cfg, &vault);
-    } else {
-        // Consume the slot so we don't re-scan every tick — zero tokens.
-        persist_last_run(now(), None);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -565,26 +507,6 @@ fn save_run_log(vault: &Path, stdout: &str, stderr: &str, session_id: Option<&st
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn slot_due_fires_once_per_interval() {
-        let anchor = 1_000_000;
-        let interval = 24;
-        // Never run before → due.
-        assert!(slot_due(anchor, anchor, interval, None));
-        // Ran at anchor, still same slot → not due.
-        assert!(!slot_due(anchor + 3600, anchor, interval, Some(anchor)));
-        // A full interval later, last run was the previous slot → due.
-        let next = anchor + 24 * 3600;
-        assert!(slot_due(next, anchor, interval, Some(anchor)));
-        // Ran in the new slot → not due again within it.
-        assert!(!slot_due(next + 3600, anchor, interval, Some(next)));
-    }
-
-    #[test]
-    fn slot_not_due_before_anchor() {
-        assert!(!slot_due(500, 1000, 24, None));
-    }
 
     #[test]
     fn parse_result_reads_claude_json() {
