@@ -23,7 +23,7 @@ import { helpJa } from "./help.ja";
  * English, which is what lets the UI be translated one area at a time.
  */
 export const ja: Partial<Record<MessageKey, string>> = {
-  "app.windowTitle": "workhub — オールインワン開発ハブ",
+  "app.windowTitle": "shared-docs-viewer",
 
   "common.cancel": "キャンセル",
   "common.save": "保存",

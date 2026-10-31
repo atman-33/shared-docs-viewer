@@ -182,12 +182,74 @@ fn mode_line(confirm: bool, language: &str) -> &'static str {
     }
 }
 
+/// Where the bundled `diagram-edit` skill and its notation rules live (T-1001).
+///
+/// The viewer ships no plugin, so the copy prompt points the agent at files
+/// instead: `resources/skills/diagram-edit/SKILL.md` plus
+/// `resources/skill-rules/{diagrams,mindmaps,schedules}.md`. In a packaged
+/// build they ride in the resource dir; in dev they sit in the repo next to
+/// `src-tauri/`, found by walking up from the exe. Returns the skill file and
+/// the rules directory.
+pub fn skill_files(app: &tauri::AppHandle) -> Option<(PathBuf, PathBuf)> {
+    use tauri::Manager;
+    let under = |base: &Path| {
+        let skill = base.join("skills").join("diagram-edit").join("SKILL.md");
+        let rules = base.join("skill-rules");
+        (skill.is_file()
+            && ["diagrams.md", "mindmaps.md", "schedules.md"]
+                .iter()
+                .all(|f| rules.join(f).is_file()))
+        .then(|| (skill, rules))
+    };
+    let dir = app.path().resource_dir().ok()?;
+    if let Some(found) = under(&dir) {
+        return Some(found);
+    }
+    // Dev (`cargo tauri dev`): resources are not staged into the resource
+    // dir, so look next to the source tree instead.
+    let exe = std::env::current_exe().ok()?;
+    let mut cur = exe.as_path();
+    while let Some(parent) = cur.parent() {
+        if let Some(found) = under(&parent.join("resources")) {
+            return Some(found);
+        }
+        cur = parent;
+    }
+    None
+}
+
 /// The same prompt for pasting into an interactive session (Claude Desktop and
 /// the like) by hand. `instruction` is whatever the panel holds: when it is
 /// empty the owner will give instructions in the following messages, so the
 /// prompt says to wait instead of editing on its own.
-pub fn build_copy_prompt(path: &str, instruction: &str, confirm: bool, language: &str) -> String {
+///
+/// `skill` names the bundled skill file and its rules directory (see
+/// [`skill_files`]): the viewer ships no plugin, so the prompt carries where
+/// to read them. `None` keeps the bare skill name, for contexts where the
+/// files are not on disk (tests).
+pub fn build_copy_prompt(
+    path: &str,
+    instruction: &str,
+    confirm: bool,
+    language: &str,
+    skill: Option<(&str, &str)>,
+) -> String {
     let instruction = instruction.trim();
+    let skill_block = skill
+        .map(|(file, rules)| {
+            if is_ja(language) {
+                format!(
+                    "\nスキルファイル: {file}\n記法ルール: {rules}\n\
+先にスキルファイルを読んでください。ノートの `type` に対応するルールファイルはそこに書いてあります。\n"
+                )
+            } else {
+                format!(
+                    "\nSkill file: {file}\nNotation rules: {rules}\n\
+Read the skill file first — it names the rule file for the note's `type`.\n"
+                )
+            }
+        })
+        .unwrap_or_default();
     if is_ja(language) {
         let request = if instruction.is_empty() {
             "指示はこのあとのメッセージで伝えます。それまでは何も編集しないでください。".to_string()
@@ -195,8 +257,8 @@ pub fn build_copy_prompt(path: &str, instruction: &str, confirm: bool, language:
             format!("指示:\n{instruction}")
         };
         return format!(
-            "`diagram-edit` スキルを使って、この workhub の図解ノートを編集してください。\n\n\
-図解ファイル: {path}\n\n\
+            "`diagram-edit` スキルを使って、この図解ノートを編集してください。\n\n\
+図解ファイル: {path}\n{skill_block}\n\
 {request}\n\n\
 {mode}\n\n\
 変更のたびに、変更した内容（または変更する内容）を、触った要素の id を挙げて 1 文で要約してください。他のファイルは変更しないでください。\n",
@@ -211,8 +273,8 @@ Do not edit anything until I do."
         format!("Instruction:\n{instruction}")
     };
     format!(
-        "Use the `diagram-edit` skill to edit this workhub diagram note.\n\n\
-Diagram file: {path}\n\n\
+        "Use the `diagram-edit` skill to edit this diagram note.\n\n\
+Diagram file: {path}\n{skill_block}\n\
 {request}\n\n\
 {mode}\n\n\
 After each change, summarize in a sentence what changed (or would change), \
@@ -503,10 +565,11 @@ mod tests {
     fn copy_prompt_carries_the_instruction_or_waits_for_one() {
         let with = build_copy_prompt(
             "C:/v/a.md",
-            "  shift by a week 
+            "  shift by a week
 ",
             false,
             "en",
+            None,
         );
         assert!(with.contains("`diagram-edit` skill"));
         assert!(with.contains("C:/v/a.md"));
@@ -516,7 +579,7 @@ shift by a week"
         ));
         assert!(with.contains("Apply the change"));
 
-        let without = build_copy_prompt("C:/v/a.md", "   ", true, "en");
+        let without = build_copy_prompt("C:/v/a.md", "   ", true, "en", None);
         assert!(!without.contains("Instruction:"));
         assert!(without.contains("Do not edit anything until I do"));
         assert!(without.contains("Do NOT write the file"));
@@ -531,13 +594,28 @@ shift by a week"
         assert!(apply.contains("変更をファイルに適用してください"));
         assert!(!apply.contains("Apply the change"));
 
-        let dry = build_copy_prompt("C:/v/a.md", "   ", true, "ja");
+        let dry = build_copy_prompt("C:/v/a.md", "   ", true, "ja", None);
         assert!(dry.contains("何も編集しないでください"));
         assert!(dry.contains("diff で報告"));
         assert!(!dry.contains("Do NOT"));
 
         // An unrecognized code falls back to English, as the task prompt does.
         assert!(build_prompt("a.md", "x", false, "fr").contains("Apply the change"));
+    }
+
+    #[test]
+    fn copy_prompt_names_the_bundled_skill_files_when_given() {
+        let skill = ("C:/app/skills/diagram-edit/SKILL.md", "C:/app/skill-rules");
+        let en = build_copy_prompt("C:/v/a.md", "do it", false, "en", Some(skill));
+        assert!(en.contains("Skill file: C:/app/skills/diagram-edit/SKILL.md"));
+        assert!(en.contains("Notation rules: C:/app/skill-rules"));
+
+        let ja = build_copy_prompt("C:/v/a.md", "do it", false, "ja", Some(skill));
+        assert!(ja.contains("スキルファイル: C:/app/skills/diagram-edit/SKILL.md"));
+        assert!(ja.contains("記法ルール: C:/app/skill-rules"));
+
+        let bare = build_copy_prompt("C:/v/a.md", "do it", false, "en", None);
+        assert!(!bare.contains("Skill file:"));
     }
 
     #[test]

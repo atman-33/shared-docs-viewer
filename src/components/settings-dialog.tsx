@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { open as pickFolders } from "@tauri-apps/plugin-dialog";
-import { Check, FolderOpen, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,7 +25,7 @@ import { DiagnosticLogPanel } from "@/components/diagnostic-log-panel";
 import { InputListenerPanel } from "@/components/input-listener-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VaultScopedBadge } from "@/components/vault-scoped-badge";
-import { LOCALES, useT, type MessageKey } from "@/lib/i18n";
+import { LOCALES, useT } from "@/lib/i18n";
 import {
   isThemePreference,
   readThemePreference,
@@ -51,12 +50,6 @@ const TIDY_DEFAULTS: Settings["tidy"] = {
 const LANGUAGES: { id: string; label: string }[] = [
   { id: "en", label: "English" },
   { id: "ja", label: "日本語" },
-];
-
-/** What "send to Claude Desktop" opens for a task. */
-const CLAUDE_DESKTOP_MODES: { id: string; labelKey: MessageKey }[] = [
-  { id: "code", labelKey: "settings.agents.claudeDesktop.modeCode" },
-  { id: "chat", labelKey: "settings.agents.claudeDesktop.modeChat" },
 ];
 
 const DEFAULTS: Settings = {
@@ -207,20 +200,6 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
     }
   };
 
-  const field = (
-    label: string,
-    key: "agent_cmd" | "opencode_cmd" | "herdr_cmd" | "worktree_root",
-  ) => (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Input
-        value={draft[key]}
-        onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
-        className="h-8 font-mono text-xs"
-      />
-    </div>
-  );
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent draggable className="flex max-h-[90vh] flex-col gap-4 sm:max-w-2xl">
@@ -228,38 +207,9 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
           <DialogTitle>{t("settings.title")}</DialogTitle>
           <DialogDescription>{t("settings.description")}</DialogDescription>
         </DialogHeader>
-        {/* Above the tabs, not inside one: every feature in the app reads this
-            one path, and a setting that important should not need a tab to be
-            found (T-0300). */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
-            {t("settings.vaultFolder.label")}
-          </label>
-          <div className="flex gap-1.5">
-            <Input
-              value={draft.vault_path ?? ""}
-              onChange={(e) => setDraft({ ...draft, vault_path: e.target.value || null })}
-              placeholder={t("settings.vaultFolder.placeholder")}
-              className="h-8 font-mono text-xs"
-            />
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="outline"
-              onClick={async () => {
-                const picked = await pickFolders({
-                  directory: true,
-                  title: t("settings.vaultFolder.chooseDialogTitle"),
-                });
-                if (typeof picked === "string") {
-                  setDraft({ ...draft, vault_path: picked.replaceAll("\\", "/") });
-                }
-              }}
-            >
-              <FolderOpen className="size-3.5" />
-            </Button>
-          </div>
-        </div>
+        {/* The viewer opens a shared folder, not a vault (T-1001): there is no
+            vault picker here. Document folders are registered on the docs
+            tab itself. */}
         <Tabs defaultValue="general" className="flex flex-col gap-3">
           <TabsList>
             <TabsTrigger value="general">{t("settings.tab.general")}</TabsTrigger>
@@ -344,28 +294,6 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
                   />
                   {t("settings.general.startupChecks.checkUpdates")}
                 </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.check_template_updates}
-                    onCheckedChange={(v) =>
-                      setDraft({ ...draft, check_template_updates: v === true })
-                    }
-                  />
-                  {t("settings.general.startupChecks.checkTemplate")}
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.auto_apply_template_updates}
-                    disabled={!draft.check_template_updates}
-                    onCheckedChange={(v) =>
-                      setDraft({ ...draft, auto_apply_template_updates: v === true })
-                    }
-                  />
-                  {t("settings.general.startupChecks.autoApply")}
-                </label>
-                <p className="pl-6 text-xs text-muted-foreground">
-                  {t("settings.general.startupChecks.autoApplyDescription")}
-                </p>
               </div>
               <div className="space-y-2 rounded-md border p-3">
                 <p className="text-sm font-medium">{t("settings.general.features.title")}</p>
@@ -470,45 +398,10 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
                 )}
               </div>
             </TabsContent>
+            {/* The viewer runs no agent itself (T-1001): no command templates,
+                no worktree root, no desktop send-off. What stays shapes the
+                copied prompt's language. */}
             <TabsContent value="agents" className="mt-0 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                {t("settings.agents.introPrefix")} <code className="text-xs">{"{path}"}</code>{" "}
-                {t("settings.agents.introSuffix")}
-              </p>
-              {field(t("settings.agents.claudeCodeCommand"), "agent_cmd")}
-              {field(t("settings.agents.opencodeCommand"), "opencode_cmd")}
-              <label className="flex items-center gap-2 pt-1 text-sm">
-                <Checkbox
-                  checked={draft.use_herdr}
-                  onCheckedChange={(v) => setDraft({ ...draft, use_herdr: v === true })}
-                />
-                {t("settings.agents.herdrCheckbox")}
-              </label>
-              {draft.use_herdr && field(t("settings.agents.herdrCommand"), "herdr_cmd")}
-              {field(t("settings.agents.worktreeRoot"), "worktree_root")}
-              <div className="space-y-1.5 pt-1">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {t("settings.agents.claudeDesktop.label")}
-                </label>
-                <p className="text-[10px] leading-tight text-muted-foreground/70">
-                  {t("settings.agents.claudeDesktop.description")}
-                </p>
-                <Select
-                  value={draft.claude_desktop_mode}
-                  onValueChange={(v) => setDraft({ ...draft, claude_desktop_mode: v })}
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CLAUDE_DESKTOP_MODES.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {t(m.labelKey)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-1.5 pt-1">
                 <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   {t("settings.agents.language.label")}
@@ -577,49 +470,6 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
                     onCheckedChange={(v) => setDraft({ ...draft, prompt_copy_multiline: v })}
                   />
                 </div>
-              </div>
-              <div className="space-y-2 rounded-md border p-3">
-                <p className="text-sm font-medium">{t("settings.agents.memory.title")}</p>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.memory_claude_code}
-                    onCheckedChange={(v) => setDraft({ ...draft, memory_claude_code: v === true })}
-                  />
-                  {t("settings.agents.memory.claudeCode")}
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.memory_opencode}
-                    onCheckedChange={(v) => setDraft({ ...draft, memory_opencode: v === true })}
-                  />
-                  {t("settings.agents.memory.opencode")}
-                </label>
-                {/* Grouped with the two switches above rather than with the
-                    other startup checks: it is about long-term memory, and a
-                    reader looking for it looks here. */}
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.check_memory_setup}
-                    onCheckedChange={(v) => setDraft({ ...draft, check_memory_setup: v === true })}
-                  />
-                  {t("settings.agents.memory.notifyStartup")}
-                </label>
-              </div>
-              <div className="space-y-2 rounded-md border p-3">
-                <p className="text-sm font-medium">{t("settings.agents.secretary.title")}</p>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.secretary_enabled}
-                    onCheckedChange={(v) => setDraft({ ...draft, secretary_enabled: v === true })}
-                  />
-                  {t("settings.agents.secretary.checkbox")}
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  {t("settings.agents.secretary.descriptionPrefix")}
-                  <code>memory/identity/decision-policy.md</code>
-                  {t("settings.agents.secretary.descriptionMid")}{" "}
-                  <code>_ai/comms/</code> {t("settings.agents.secretary.descriptionSuffix")}
-                </p>
               </div>
             </TabsContent>
           </div>

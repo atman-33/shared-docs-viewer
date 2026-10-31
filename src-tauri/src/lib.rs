@@ -380,6 +380,7 @@ pub fn run() {
             commands::diagram_edit_status,
             commands::has_snapshot,
             commands::restore_diagram_snapshot,
+            commands::docs_create_diagram,
             commands::docs_roots,
             commands::add_docs_root,
             commands::remove_docs_root,

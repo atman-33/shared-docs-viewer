@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ChevronsDownUp, Link2, RefreshCw, Search } from "lucide-react";
+import { ChevronsDownUp, Link2, Plus, RefreshCw, Search } from "lucide-react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { DocsCreateDiagramDialog } from "@/components/docs/docs-create-diagram-dialog";
 import { DocsFileList } from "@/components/docs/docs-file-list";
 import { DocsPreview } from "@/components/docs/docs-preview";
 import { DocsRootsBar } from "@/components/docs/docs-roots-bar";
@@ -126,6 +127,8 @@ export function DocsView() {
   const [openPathBusy, setOpenPathBusy] = useState(false);
   const [openPathNotice, setOpenPathNotice] = useState("");
   const [openPathCandidates, setOpenPathCandidates] = useState<DocsOpenPathMatch[]>([]);
+  // Creating a diagram note in the folder being read (T-1001).
+  const [createOpen, setCreateOpen] = useState(false);
   // How the candidates on offer were found, so picking one says the same.
   const [openPathHow, setOpenPathHow] = useState<OpenPathHow>("tail");
 
@@ -485,6 +488,18 @@ export function DocsView() {
       .finally(() => setOpenPathBusy(false));
   }, [openPathText, openPathBusy, openResolvedPath, selected?.path]);
 
+  /** Opens a freshly created diagram note: the folder is already showing,
+   * so only the tree path, the document and a re-read are needed. */
+  const onDiagramCreated = useCallback(
+    (path: string) => {
+      setSelectedDir(parentPath(path));
+      reveal(path);
+      openDoc(path);
+      refresh();
+    },
+    [reveal, openDoc, refresh],
+  );
+
   // A pick belongs to the list it was made in (T-0400): another root, another
   // folder or the other layout puts different rows on screen, and a pick that
   // outlived them would copy files nobody can see any more.
@@ -532,6 +547,17 @@ export function DocsView() {
           void loadDocsSettings();
           refresh();
         }}
+      />
+
+      {/* A diagram note beside the folder being read (T-1001): created in
+          the picked folder, or the root itself when no folder is picked. */}
+      <DocsCreateDiagramDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        dir={selectedDir || selected?.path || ""}
+        defaultKind="mindmap"
+        onCreated={onDiagramCreated}
+        onError={setError}
       />
 
       {error && (
@@ -597,6 +623,17 @@ export function DocsView() {
                     onClick={refresh}
                   >
                     <RefreshCw className={cn(refreshing && "animate-spin")} />
+                  </Button>
+                </Hint>
+                <Hint label={t("diagram.create.title")}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t("diagram.create.title")}
+                    disabled={!selected}
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    <Plus />
                   </Button>
                 </Hint>
                 <Hint label={t("docs.view.openPathHint")}>

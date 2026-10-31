@@ -536,10 +536,14 @@ export function DocsPreview({
           </div>
         )}
         {!error && content && diagramKind && (
-          // A diagram note reads through the Projects panes' editor host,
-          // frozen read-only: the tab stays read-only, so no edit UI comes
-          // along. Keyed by the refresh as well, so the toolbar's refresh
-          // re-reads the note even when no file event arrives off the share.
+          // A diagram note reads through the Projects panes' editor host
+          // (T-1000, editable in the viewer in T-1001): the same real editor,
+          // with a copy-prompt button for the agent and manual editing by
+          // hand. There is no in-app AI runner — that stays in workhub.
+          // The pop-out viewer window (`standalone`) stays read-only: two
+          // writers on one note invite a conflict. Keyed by the refresh as
+          // well, so the toolbar's refresh re-reads the note even when no
+          // file event arrives off the share.
           <div key={`${path}|${refreshToken}`} className="flex h-full min-h-0 flex-col">
             <DiagramEditorHost
               kind={diagramKind}
@@ -547,7 +551,7 @@ export function DocsPreview({
               title={diagramTitle}
               project=""
               configVersion={0}
-              readOnly
+              readOnly={standalone ? true : undefined}
             />
           </div>
         )}
