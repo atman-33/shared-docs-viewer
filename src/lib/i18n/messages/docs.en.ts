@@ -10,6 +10,8 @@ export const docsEn = {
   "docs.entry.openWithDefaultApp": "Open with default app",
   "docs.entry.showInExplorer": "Show in Explorer",
   "docs.entry.addToShortcuts": "Add to shortcuts",
+  "docs.entry.renameDiagram": "Rename diagram",
+  "docs.entry.deleteDiagram": "Move diagram to trash",
   "docs.entry.copyPath": "Copy path",
   "docs.entry.copyPaths": "Copy {count} paths",
   "docs.entry.opensOutsideHint": "{name} — opens outside workhub",
@@ -33,6 +35,12 @@ export const docsEn = {
   "docs.view.rootUnreachable":
     "{path} is not reachable on this PC. Check that the drive is mounted and, if it lives somewhere else now, correct the path with the pencil button above.",
   "docs.view.tryAgain": "Try again",
+  "docs.rename.title": "Rename diagram",
+  "docs.rename.nameLabel": "Name",
+  "docs.rename.namePlaceholder": "Diagram name…",
+  "docs.delete.title": "Move diagram to trash",
+  "docs.delete.confirmDescription":
+    "\u201c{name}\u201d will be moved to the OS trash. Restore it from the trash if this was a mistake.",
 
   "docs.sidebar.dragToReorder": "Drag to reorder",
   "docs.sidebar.revealInTree": "Reveal in tree",

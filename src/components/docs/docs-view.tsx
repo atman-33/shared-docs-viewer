@@ -14,7 +14,15 @@ import {
 } from "@/components/docs/docs-sidebar-sections";
 import { DocsTree, useEntryActions } from "@/components/docs/docs-tree";
 import { useDocsDirs } from "@/components/docs/use-docs-dirs";
+import { ConfirmDialog } from "@/components/graph/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Hint } from "@/components/ui/hint";
 import { Input } from "@/components/ui/input";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -132,6 +140,11 @@ export function DocsView() {
   // from a row's menu it is that row's folder.
   const [createOpen, setCreateOpen] = useState(false);
   const [createDir, setCreateDir] = useState("");
+  // Renaming a diagram note in place (T-1002): the row it was asked from,
+  // and the new title being typed. Deleting goes through a confirm dialog.
+  const [renameTarget, setRenameTarget] = useState<DocsEntry | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<DocsEntry | null>(null);
   // How the candidates on offer were found, so picking one says the same.
   const [openPathHow, setOpenPathHow] = useState<OpenPathHow>("tail");
 
@@ -383,7 +396,28 @@ export function DocsView() {
     setCreateOpen(true);
   }, []);
 
-  const actions = useEntryActions(setError, toggleShortcut, isShortcut, openCreateDialog);
+  /** Opens the rename dialog for a diagram note, seeded with its file stem. */
+  const openRenameDialog = useCallback((entry: DocsEntry) => {
+    setRenameTarget(entry);
+    setRenameTitle(baseName(entry.path).replace(/\.(md|markdown)$/i, ""));
+  }, []);
+
+  /** Moves the diagram to the OS trash, then drops every pointer at it. */
+  const runDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    void api
+      .docsDeleteDiagram(target.path)
+      .then(() => {
+        setError("");
+        if (doc === target.path) setDoc("");
+        setRecent(removeRecent(rootId, target.path));
+        saveShortcuts(shortcuts.filter((s) => s.path !== target.path));
+        refresh();
+      })
+      .catch((e) => setError(String(e)));
+  }, [deleteTarget, doc, rootId, shortcuts, saveShortcuts, refresh]);
 
   /** Expands the tree down to `path` and puts the cursor on it. */
   const reveal = useCallback(
@@ -399,6 +433,31 @@ export function DocsView() {
       setCursor(path);
     },
     [selected],
+  );
+
+  /** Renames the diagram: frontmatter title and file name move together. */
+  const runRename = useCallback(() => {
+    if (!renameTarget || !renameTitle.trim()) return;
+    const target = renameTarget;
+    setRenameTarget(null);
+    void api
+      .docsRenameDiagram(target.path, renameTitle.trim())
+      .then((next) => {
+        setError("");
+        reveal(next);
+        openDoc(next);
+        refresh();
+      })
+      .catch((e) => setError(String(e)));
+  }, [renameTarget, renameTitle, reveal, openDoc, refresh]);
+
+  const actions = useEntryActions(
+    setError,
+    toggleShortcut,
+    isShortcut,
+    openCreateDialog,
+    openRenameDialog,
+    setDeleteTarget,
   );
 
   const openShortcut = useCallback(
@@ -577,6 +636,52 @@ export function DocsView() {
         defaultKind="mindmap"
         onCreated={onDiagramCreated}
         onError={setError}
+      />
+
+      {/* Renaming a diagram note in place (T-1002): frontmatter title and
+          file name move together on save. */}
+      <Dialog open={renameTarget !== null} onOpenChange={(open) => !open && setRenameTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("docs.rename.title")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5 text-xs">
+            <label htmlFor="docs-rename-name" className="font-medium">
+              {t("docs.rename.nameLabel")}
+            </label>
+            <Input
+              id="docs-rename-name"
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") runRename();
+              }}
+              placeholder={t("docs.rename.namePlaceholder")}
+              className="h-8"
+            />
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="ghost" onClick={() => setRenameTarget(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button size="sm" disabled={!renameTitle.trim()} onClick={runRename}>
+              {t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t("docs.delete.title")}
+        description={
+          deleteTarget
+            ? t("docs.delete.confirmDescription", { name: baseName(deleteTarget.path) })
+            : ""
+        }
+        confirmLabel={t("common.remove")}
+        onConfirm={runDelete}
+        onClose={() => setDeleteTarget(null)}
       />
 
       {error && (

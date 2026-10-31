@@ -295,6 +295,14 @@ export const api = {
    * `dir` must be a folder inside a registered root. Returns the new path. */
   docsCreateDiagram: (dir: string, kind: string, title: string) =>
     invoke<string>("docs_create_diagram", { dir, kind, title }),
+  /** Renames a diagram note inside a registered root (T-1002): frontmatter
+   * `title` and file name move together. Returns the new path. Rejects when
+   * the file is not a diagram note. */
+  docsRenameDiagram: (path: string, title: string) =>
+    invoke<string>("docs_rename_diagram", { path, title }),
+  /** Moves a diagram note inside a registered root to the OS trash (T-1002).
+   * Rejects when the file is not a diagram note. */
+  docsDeleteDiagram: (path: string) => invoke<void>("docs_delete_diagram", { path }),
   /** One directory only — the tree calls again when a folder is opened. */
   docsListDir: (path: string) => invoke<DocsEntry[]>("docs_list_dir", { path }),
   docsReadFile: (path: string) => invoke<string>("docs_read_file", { path }),

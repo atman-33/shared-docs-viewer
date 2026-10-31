@@ -12,6 +12,8 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.entry.openWithDefaultApp": "既定のアプリで開く",
   "docs.entry.showInExplorer": "エクスプローラーで表示",
   "docs.entry.addToShortcuts": "ショートカットに追加",
+  "docs.entry.renameDiagram": "図解の名前を変更",
+  "docs.entry.deleteDiagram": "図解をごみ箱に移動",
   "docs.entry.copyPath": "パスをコピー",
   "docs.entry.copyPaths": "{count} 件のパスをコピー",
   "docs.entry.opensOutsideHint": "{name} — workhub の外で開きます",
@@ -35,6 +37,12 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.view.rootUnreachable":
     "{path} はこの PC から到達できません。ドライブがマウントされているか確認し、場所が変わっている場合は上の鉛筆ボタンでパスを修正してください。",
   "docs.view.tryAgain": "再試行",
+  "docs.rename.title": "図解の名前変更",
+  "docs.rename.nameLabel": "名前",
+  "docs.rename.namePlaceholder": "図解の名前…",
+  "docs.delete.title": "図解をごみ箱に移動",
+  "docs.delete.confirmDescription":
+    "「{name}」をごみ箱に移動します。間違いだった場合はごみ箱から元に戻せます。",
 
   "docs.sidebar.dragToReorder": "ドラッグして並べ替え",
   "docs.sidebar.revealInTree": "ツリーで表示",

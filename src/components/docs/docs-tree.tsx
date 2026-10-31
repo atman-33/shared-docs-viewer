@@ -9,9 +9,11 @@ import {
   FileText,
   Folder,
   FolderOpen,
+  Pencil,
   Plus,
   Star,
   StarOff,
+  Trash2,
 } from "lucide-react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import {
@@ -50,6 +52,10 @@ export interface EntryActions {
   isShortcut: (path: string) => boolean;
   /** Opens the new-diagram dialog for a folder (T-1001). */
   createDiagram?: (dir: string) => void;
+  /** Opens the rename dialog for a diagram note (T-1002). */
+  renameDiagram?: (entry: DocsEntry) => void;
+  /** Asks to move a diagram note to the OS trash (T-1002). */
+  deleteDiagram?: (entry: DocsEntry) => void;
 }
 
 /** The Ctrl/Shift+click pick of files (T-0400), lifted so the view can drop it. */
@@ -487,6 +493,20 @@ function EntryMenu({
           {t("diagram.create.title")}
         </ContextMenuItem>
       )}
+      {/* Renaming and deleting stay on diagram notes (T-1002): the backend
+          refuses anything else, so these never show on other files. */}
+      {!entry.is_dir && entry.is_markdown && actions.renameDiagram && (
+        <ContextMenuItem onSelect={() => actions.renameDiagram?.(entry)}>
+          <Pencil />
+          {t("docs.entry.renameDiagram")}
+        </ContextMenuItem>
+      )}
+      {!entry.is_dir && entry.is_markdown && actions.deleteDiagram && (
+        <ContextMenuItem onSelect={() => actions.deleteDiagram?.(entry)}>
+          <Trash2 />
+          {t("docs.entry.deleteDiagram")}
+        </ContextMenuItem>
+      )}
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => actions.toggleShortcut(entry)}>
         {starred ? <StarOff /> : <Star />}
@@ -503,6 +523,8 @@ export function useEntryActions(
   toggleShortcut: (entry: DocsEntry) => void,
   isShortcut: (path: string) => boolean,
   onCreateDiagram?: (dir: string) => void,
+  onRenameDiagram?: (entry: DocsEntry) => void,
+  onDeleteDiagram?: (entry: DocsEntry) => void,
 ): EntryActions {
   return useMemo(
     () => ({
@@ -514,7 +536,9 @@ export function useEntryActions(
       toggleShortcut,
       isShortcut,
       createDiagram: onCreateDiagram,
+      renameDiagram: onRenameDiagram,
+      deleteDiagram: onDeleteDiagram,
     }),
-    [onError, toggleShortcut, isShortcut, onCreateDiagram],
+    [onError, toggleShortcut, isShortcut, onCreateDiagram, onRenameDiagram, onDeleteDiagram],
   );
 }
