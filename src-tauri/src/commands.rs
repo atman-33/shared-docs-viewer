@@ -1156,9 +1156,7 @@ pub fn copy_diagram_edit_prompt(
             rules.to_string_lossy().replace('\\', "/"),
         )
     });
-    let skill_ref = skill
-        .as_ref()
-        .map(|(f, r)| (f.as_str(), r.as_str()));
+    let skill_ref = skill.as_ref().map(|(f, r)| (f.as_str(), r.as_str()));
     let prompt = diagram_edit::build_copy_prompt(
         &path.replace('\\', "/"),
         &instruction,
@@ -1365,8 +1363,8 @@ pub async fn docs_create_diagram(
             "" => kind.clone(),
             t => t.to_string(),
         };
-        let content =
-            diagram::skeleton(&kind, &title, "", &vault_note::today()).map_err(|e| e.to_string())?;
+        let content = diagram::skeleton(&kind, &title, "", &vault_note::today())
+            .map_err(|e| e.to_string())?;
         let path = vault_note::unique_note_path(&folder, &title, &kind, None);
         std::fs::write(&path, &content).map_err(|e| e.to_string())?;
         Ok(vault_note::norm_path(&path))
