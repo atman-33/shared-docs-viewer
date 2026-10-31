@@ -6,7 +6,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { ExternalLink, File, FileCode, FileText, FolderOpen, Star, StarOff } from "lucide-react";
+import { ExternalLink, File, FileCode, FileText, FolderOpen, Pencil, Star, StarOff, Trash2 } from "lucide-react";
 import { Hint } from "@/components/ui/hint";
 import {
   CopyPathItem,
@@ -238,6 +238,18 @@ function FileRow({
           <FolderOpen />
           {t("docs.entry.showInExplorer")}
         </ContextMenuItem>
+        {entry.is_markdown && actions.renameDiagram && (
+          <ContextMenuItem onSelect={() => actions.renameDiagram?.(entry)}>
+            <Pencil />
+            {t("docs.entry.renameDiagram")}
+          </ContextMenuItem>
+        )}
+        {entry.is_markdown && actions.deleteDiagram && (
+          <ContextMenuItem onSelect={() => actions.deleteDiagram?.(entry)}>
+            <Trash2 />
+            {t("docs.entry.deleteDiagram")}
+          </ContextMenuItem>
+        )}
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => actions.toggleShortcut(entry)}>
           {starred ? <StarOff /> : <Star />}

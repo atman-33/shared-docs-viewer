@@ -1373,6 +1373,39 @@ pub async fn docs_create_diagram(
     .map_err(|e| e.to_string())?
 }
 
+/// Renames a diagram note inside a registered document root (T-1002): its
+/// frontmatter `title` and its file name move together. Returns the note's
+/// new path, which the caller must reselect.
+///
+/// The vault-bound `rename_diagram` is unusable here — the viewer has no
+/// vault — so this guards the path against the roots and renames through the
+/// vault-free half. Anything that is not a diagram note is refused.
+#[tauri::command]
+pub async fn docs_rename_diagram(path: String, title: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let settings = storage::load().settings;
+        let real = docs::resolve_within_roots(&path, &docs::allowed_roots(&settings))?;
+        diagram::rename_shared_diagram(&real, &title)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Moves a diagram note inside a registered document root to the OS trash
+/// (T-1002). There is no vault trash to receive it, so the platform's own
+/// trash is what keeps a mis-click reversible. Anything that is not a diagram
+/// note is refused.
+#[tauri::command]
+pub async fn docs_delete_diagram(path: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let settings = storage::load().settings;
+        let real = docs::resolve_within_roots(&path, &docs::allowed_roots(&settings))?;
+        diagram::trash_shared_diagram(&real)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Reads an image a document embeds and returns it as a `data:` URI.
 #[tauri::command]
 pub async fn docs_read_asset(path: String) -> Result<String, String> {
@@ -1577,15 +1610,27 @@ pub async fn create_diagram(
 
 /// Reads a diagram note of any kind: the whole text plus the mtime that guards
 /// the next [`write_diagram`].
+///
+/// The viewer has no vault, so unlike workhub this refuses anything outside
+/// the registered document roots (T-1002): the Docs tab passes shared-folder
+/// paths here, and an unguarded read would reach any path on the machine.
 #[tauri::command]
 pub async fn read_diagram(path: String) -> Result<crate::diagram::DiagramDoc, String> {
-    tauri::async_runtime::spawn_blocking(move || crate::diagram::read_diagram(&PathBuf::from(path)))
-        .await
-        .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        let settings = storage::load().settings;
+        let real = docs::resolve_within_roots(&path, &docs::allowed_roots(&settings))?;
+        crate::diagram::read_diagram(&real)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Writes a diagram note, refusing when the file changed on disk since the
 /// caller read it (`expected_mtime` 0 skips the check). Returns the new mtime.
+///
+/// Same containment guard as [`read_diagram`]: a write outside the registered
+/// roots is refused, and a failure (read-only share, offline folder) surfaces
+/// as an error the editor shows rather than a crash (T-1002).
 #[tauri::command]
 pub async fn write_diagram(
     path: String,
@@ -1593,7 +1638,9 @@ pub async fn write_diagram(
     expected_mtime: u64,
 ) -> Result<u64, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        crate::diagram::write_diagram(&PathBuf::from(path), &content, expected_mtime)
+        let settings = storage::load().settings;
+        let real = docs::resolve_within_roots(&path, &docs::allowed_roots(&settings))?;
+        crate::diagram::write_diagram(&real, &content, expected_mtime)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -2434,4 +2481,23 @@ pub async fn plugins_install_plugin(
     })
     .await
     .map_err(|e| format!("plugin install task failed: {e}"))?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_docs_path;
+
+    /// Root registration has to survive network shares (T-1002): a UNC path
+    /// picked from the folder dialog must normalize to the same `//server/…`
+    /// form the guard and the availability check compare against.
+    #[test]
+    fn normalize_keeps_unc_and_drive_roots_usable() {
+        assert_eq!(normalize_docs_path(r"\\server\share\docs\"), "//server/share/docs");
+        assert_eq!(normalize_docs_path("//server/share/"), "//server/share");
+        assert_eq!(normalize_docs_path(r"G:\docs\"), "G:/docs");
+        // A bare drive root keeps its slash — "G:" alone is not a folder.
+        assert_eq!(normalize_docs_path("G:/"), "G:/");
+        assert_eq!(normalize_docs_path("  C:/a  "), "C:/a");
+        assert_eq!(normalize_docs_path("   "), "");
+    }
 }

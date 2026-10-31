@@ -329,6 +329,8 @@ pub fn run() {
             commands::has_snapshot,
             commands::restore_diagram_snapshot,
             commands::docs_create_diagram,
+            commands::docs_rename_diagram,
+            commands::docs_delete_diagram,
             commands::docs_roots,
             commands::add_docs_root,
             commands::remove_docs_root,

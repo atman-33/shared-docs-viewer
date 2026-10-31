@@ -431,6 +431,35 @@ fn describe(vault: &Path, path: &Path) -> Result<DiagramFile, String> {
 /// A numbered child of a backlog item (`020-<title>.md`) keeps its number so the
 /// item's ordering survives. The note's own file is never a name collision.
 pub fn rename_diagram(vault: &Path, path: &Path, new_title: &str) -> Result<DiagramFile, String> {
+    let target = rename_diagram_file(path, new_title)?;
+    // The snapshot is keyed by path; left behind, the undo would vanish.
+    move_snapshot(vault, SNAPSHOT_DIR, path, &target)?;
+    describe(vault, &target)
+}
+
+/// The vault-free half of [`rename_diagram`]: validates the note, rewrites its
+/// frontmatter and moves the file. Returns the note's new path.
+///
+/// The viewer's Docs tab renames through this (T-1002): there is no vault, so
+/// no snapshot to move and no project listing entry to describe.
+pub fn rename_shared_diagram(path: &Path, new_title: &str) -> Result<String, String> {
+    Ok(norm_path(&rename_diagram_file(path, new_title)?))
+}
+
+/// Moves a diagram note inside a shared folder to the OS trash (T-1002).
+/// Unlike [`delete_diagram`] there is no vault trash to receive it, so the
+/// platform's own trash is what keeps a mis-click reversible.
+pub fn trash_shared_diagram(path: &Path) -> Result<(), String> {
+    // Only a diagram note goes through here — anything else is refused before
+    // anything is moved.
+    kind_of(path)?;
+    if !path.is_file() {
+        return Err("this diagram no longer exists".into());
+    }
+    trash::delete(path).map_err(|e| e.to_string())
+}
+
+fn rename_diagram_file(path: &Path, new_title: &str) -> Result<PathBuf, String> {
     let title = new_title.trim();
     if title.is_empty() {
         return Err("a diagram name is required".into());
@@ -466,10 +495,8 @@ pub fn rename_diagram(vault: &Path, path: &Path, new_title: &str) -> Result<Diag
     // a real rename, even though the two names collide on Windows.
     if norm_path(&target) != norm_path(path) {
         fs::rename(path, &target).map_err(|e| e.to_string())?;
-        // The snapshot is keyed by path; left behind, the undo would vanish.
-        move_snapshot(vault, SNAPSHOT_DIR, path, &target)?;
     }
-    describe(vault, &target)
+    Ok(target)
 }
 
 /// Moves a diagram into `_ai/state/diagram-trash/` rather than unlinking it:
@@ -965,6 +992,34 @@ mod tests {
         assert!(trashed.contains("_ai/state/diagram-trash/"), "{trashed}");
         assert!(delete_diagram(&vault, Path::new(&file.path)).is_err());
         fs::remove_dir_all(&vault).ok();
+    }
+
+    /// The Docs tab's vault-free rename/delete path (T-1002): no vault, no
+    /// project — a plain folder stands in for the shared folder.
+    #[test]
+    fn shared_rename_moves_title_and_name_and_refuses_non_diagrams() {
+        let dir = std::env::temp_dir().join(format!("shared-rename-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("Old.md");
+        fs::write(
+            &path,
+            "---\ntype: mindmap\ntitle: Old\nupdated: 2026-10-31\n---\n\n## Nodes\n\n- N-001 root\n",
+        )
+        .unwrap();
+
+        let moved = rename_shared_diagram(&path, "New name").unwrap();
+        assert!(moved.ends_with("New name.md"), "{moved}");
+        assert!(!path.exists());
+        let (front, _) = split_frontmatter(&fs::read_to_string(&moved).unwrap()).unwrap();
+        assert_eq!(frontmatter_value(&front, "title"), "New name");
+
+        // Plain Markdown is not a diagram: neither command touches it.
+        let plain = dir.join("plain.md");
+        fs::write(&plain, "# just prose\n").unwrap();
+        assert!(rename_shared_diagram(&plain, "Other").is_err());
+        assert!(trash_shared_diagram(&plain).is_err());
+        assert!(plain.is_file());
+        fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
