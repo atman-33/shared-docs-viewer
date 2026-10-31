@@ -1,5 +1,5 @@
 ---
-description: Release process and asset-naming contract for workhub
+description: Release process and asset-naming contract for shared-docs-viewer
 paths:
   - "src-tauri/Cargo.toml"
   - "CHANGELOG.md"
@@ -40,11 +40,11 @@ requires a version bump and release, even when nothing under `src-tauri/` or
 ## Hard invariants — breaking these bricks installed copies
 
 - **Tag format is `vX.Y.Z`** and must equal the Cargo.toml version.
-- **Every release must carry a bare `workhub.exe` asset with exactly that
+- **Every release must carry a bare `shared-docs-viewer.exe` asset with exactly that
   name.** `src-tauri/src/update.rs` finds the download URL by matching the
-  asset name `workhub.exe`; the README install command uses
-  `releases/latest/download/workhub.exe`. Renaming or dropping this asset
+  asset name `shared-docs-viewer.exe`; the README install command uses
+  `releases/latest/download/shared-docs-viewer.exe`. Renaming or dropping this asset
   silently disables self-update for every installed copy.
-- The zip asset is `workhub-windows-x86_64.zip` (referenced by README).
+- The zip asset is `shared-docs-viewer-windows-x86_64.zip` (referenced by README).
 - Never create or edit GitHub Releases by hand; never re-tag a published
   version.
