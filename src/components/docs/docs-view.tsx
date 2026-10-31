@@ -127,8 +127,11 @@ export function DocsView() {
   const [openPathBusy, setOpenPathBusy] = useState(false);
   const [openPathNotice, setOpenPathNotice] = useState("");
   const [openPathCandidates, setOpenPathCandidates] = useState<DocsOpenPathMatch[]>([]);
-  // Creating a diagram note in the folder being read (T-1001).
+  // Creating a diagram note in the folder being read (T-1001). `createDir`
+  // is fixed when the dialog opens — from the toolbar it follows the cursor,
+  // from a row's menu it is that row's folder.
   const [createOpen, setCreateOpen] = useState(false);
+  const [createDir, setCreateDir] = useState("");
   // How the candidates on offer were found, so picking one says the same.
   const [openPathHow, setOpenPathHow] = useState<OpenPathHow>("tail");
 
@@ -364,7 +367,23 @@ export function DocsView() {
     [shortcuts, saveShortcuts],
   );
 
-  const actions = useEntryActions(setError, toggleShortcut, isShortcut);
+  /** Where a toolbar-opened dialog creates: the folder the cursor is on, the
+   * parent of the file it is on, else the listed folder, else the root. */
+  const createTargetDir = useCallback(() => {
+    if (cursor) {
+      if (cursor === selected?.path) return selected.path;
+      if (dirs[cursor]?.status === "ready") return cursor;
+      return parentPath(cursor);
+    }
+    return selectedDir || selected?.path || "";
+  }, [cursor, dirs, selectedDir, selected]);
+
+  const openCreateDialog = useCallback((dir: string) => {
+    setCreateDir(dir);
+    setCreateOpen(true);
+  }, []);
+
+  const actions = useEntryActions(setError, toggleShortcut, isShortcut, openCreateDialog);
 
   /** Expands the tree down to `path` and puts the cursor on it. */
   const reveal = useCallback(
@@ -549,12 +568,12 @@ export function DocsView() {
         }}
       />
 
-      {/* A diagram note beside the folder being read (T-1001): created in
-          the picked folder, or the root itself when no folder is picked. */}
+      {/* A diagram note beside the folder being read (T-1001): `createDir`
+          is the toolbar's cursor rule or the row menu's folder. */}
       <DocsCreateDiagramDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        dir={selectedDir || selected?.path || ""}
+        dir={createDir}
         defaultKind="mindmap"
         onCreated={onDiagramCreated}
         onError={setError}
@@ -631,7 +650,7 @@ export function DocsView() {
                     variant="ghost"
                     aria-label={t("diagram.create.title")}
                     disabled={!selected}
-                    onClick={() => setCreateOpen(true)}
+                    onClick={() => openCreateDialog(createTargetDir())}
                   >
                     <Plus />
                   </Button>

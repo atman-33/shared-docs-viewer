@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,10 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { DiagnosticLogPanel } from "@/components/diagnostic-log-panel";
-import { InputListenerPanel } from "@/components/input-listener-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VaultScopedBadge } from "@/components/vault-scoped-badge";
 import { LOCALES, useT } from "@/lib/i18n";
@@ -295,39 +291,8 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
                   {t("settings.general.startupChecks.checkUpdates")}
                 </label>
               </div>
-              <div className="space-y-2 rounded-md border p-3">
-                <p className="text-sm font-medium">{t("settings.general.features.title")}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t("settings.general.features.inkNotePrefix")}
-                  <span className="font-medium"> {t("nav.ink")} </span>
-                  {t("settings.general.features.inkNoteSuffix")}
-                </p>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={draft.quick_capture_enabled}
-                    onCheckedChange={(v) =>
-                      setDraft({ ...draft, quick_capture_enabled: v === true })
-                    }
-                  />
-                  {t("settings.general.features.quickCapture")}
-                </label>
-                {draft.quick_capture_enabled && (
-                  <div className="space-y-1.5 pt-1">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      {t("settings.general.features.quickCaptureHotkeyLabel")}
-                    </label>
-                    <Input
-                      value={draft.quick_capture_shortcut}
-                      onChange={(e) =>
-                        setDraft({ ...draft, quick_capture_shortcut: e.target.value })
-                      }
-                      placeholder="Ctrl+Alt+N"
-                      className="h-8 font-mono text-xs"
-                    />
-                  </div>
-                )}
-              </div>
-              <InputListenerPanel />
+              {/* The viewer runs no helpers (T-1001): no quick-capture, no ink,
+                  no listener to restart. Diagnostics stay for the log. */}
               <DiagnosticLogPanel />
               <div className="space-y-2 rounded-md border p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -425,51 +390,6 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-1.5 pt-1">
-                <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  {t("settings.agents.remindEveryTurn.label")}
-                  <VaultScopedBadge />
-                </label>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] leading-tight text-muted-foreground/70">
-                    {t("settings.agents.remindEveryTurn.description")}
-                  </p>
-                  <Switch
-                    checked={draft.response_language_inject}
-                    onCheckedChange={(v) => setDraft({ ...draft, response_language_inject: v })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5 pt-1">
-                <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  {t("settings.agents.customPrompt.label")}
-                  <VaultScopedBadge />
-                </label>
-                <p className="text-[10px] leading-tight text-muted-foreground/70">
-                  {t("settings.agents.customPrompt.description")}
-                </p>
-                <Textarea
-                  value={draft.custom_prompt}
-                  onChange={(e) => setDraft({ ...draft, custom_prompt: e.target.value })}
-                  placeholder={t("settings.agents.customPrompt.placeholder")}
-                  className="min-h-20 text-xs"
-                />
-              </div>
-              <div className="space-y-1.5 pt-1">
-                <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                  {t("settings.agents.lineBreaks.label")}
-                  <VaultScopedBadge />
-                </label>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[10px] leading-tight text-muted-foreground/70">
-                    {t("settings.agents.lineBreaks.description")}
-                  </p>
-                  <Switch
-                    checked={draft.prompt_copy_multiline}
-                    onCheckedChange={(v) => setDraft({ ...draft, prompt_copy_multiline: v })}
-                  />
-                </div>
               </div>
             </TabsContent>
           </div>

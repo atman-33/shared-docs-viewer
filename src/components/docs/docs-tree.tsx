@@ -9,6 +9,7 @@ import {
   FileText,
   Folder,
   FolderOpen,
+  Plus,
   Star,
   StarOff,
 } from "lucide-react";
@@ -47,6 +48,8 @@ export interface EntryActions {
   toggleShortcut: (entry: DocsEntry) => void;
   /** Whether the row is starred right now. */
   isShortcut: (path: string) => boolean;
+  /** Opens the new-diagram dialog for a folder (T-1001). */
+  createDiagram?: (dir: string) => void;
 }
 
 /** The Ctrl/Shift+click pick of files (T-0400), lifted so the view can drop it. */
@@ -477,6 +480,13 @@ function EntryMenu({
         <FolderOpen />
         {t("docs.entry.showInExplorer")}
       </ContextMenuItem>
+      {/* A diagram belongs where it is read: the folder it was asked from. */}
+      {entry.is_dir && actions.createDiagram && (
+        <ContextMenuItem onSelect={() => actions.createDiagram?.(entry.path)}>
+          <Plus />
+          {t("diagram.create.title")}
+        </ContextMenuItem>
+      )}
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => actions.toggleShortcut(entry)}>
         {starred ? <StarOff /> : <Star />}
@@ -492,6 +502,7 @@ export function useEntryActions(
   onError: (message: string) => void,
   toggleShortcut: (entry: DocsEntry) => void,
   isShortcut: (path: string) => boolean,
+  onCreateDiagram?: (dir: string) => void,
 ): EntryActions {
   return useMemo(
     () => ({
@@ -502,7 +513,8 @@ export function useEntryActions(
         void writeText(formatPaths(paths)).catch((e) => onError(String(e))),
       toggleShortcut,
       isShortcut,
+      createDiagram: onCreateDiagram,
     }),
-    [onError, toggleShortcut, isShortcut],
+    [onError, toggleShortcut, isShortcut, onCreateDiagram],
   );
 }
