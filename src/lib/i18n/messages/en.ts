@@ -30,7 +30,7 @@ import { personaEn } from "./persona.en";
 import { helpEn } from "./help.en";
 
 export const en = {
-  "app.windowTitle": "workhub — All-in-one Dev Hub",
+  "app.windowTitle": "shared-docs-viewer",
 
   "common.cancel": "Cancel",
   "common.save": "Save",

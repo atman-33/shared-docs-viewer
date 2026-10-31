@@ -169,23 +169,9 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(
-            tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, shortcut, event| {
-                    // Runs inside WndProc on Windows — only show the
-                    // pre-built window here, never build one (see
-                    // quick_capture.rs module docs).
-                    if event.state != tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        return;
-                    }
-                    if quick_capture::matches(app, shortcut) {
-                        quick_capture::show(app);
-                    } else if voice::matches(app, shortcut) {
-                        voice::toggle(app);
-                    }
-                })
-                .build(),
-        )
+        // No global-shortcut plugin (T-1001): the viewer registers no
+        // hotkeys, so it can run beside workhub without stealing its
+        // quick-capture, voice or clips gestures.
         .manage(quick_capture::QuickCaptureState::default())
         .manage(clips::ClipsState::default())
         .manage(tasks::WatcherState::default())
@@ -199,15 +185,10 @@ pub fn run() {
         .manage(diagram_edit::DiagramEditState::default())
         .manage(docs_viewer::DocsViewerState::default())
         .setup(|app| {
-            // Closing the main window used to leave the process running
-            // (the hidden quick-capture/voice windows below keep Tauri
-            // alive), producing windowless zombie processes that then lock
-            // their own exe against future self-updates. There is no tray
-            // icon, so a windowless process is also unreachable — exit the
-            // whole app when the main window closes. The quick-capture and
-            // voice windows are hidden helper windows, not covered by this
-            // (their own `CloseRequested` just hides them, see their
-            // modules), so hiding either of them never exits the app.
+            // There is no tray icon, so a windowless process is unreachable —
+            // exit the whole app when the main window closes. (The viewer
+            // builds no hidden helper windows, so nothing else keeps Tauri
+            // alive past this point.)
             if let Some(main_window) = app.get_webview_window("main") {
                 let app_handle = app.handle().clone();
                 main_window.on_window_event(move |event| {
@@ -236,9 +217,11 @@ pub fn run() {
             // values this machine is already using, so the split never
             // starts by losing settings (T-0206).
             vault_settings::seed_if_missing(&cfg);
-            if cfg.settings.ink_enabled {
-                ink::start(app.handle());
-            }
+            // The viewer builds no helper windows and runs no background
+            // agents (T-1001): no quick-capture, voice indicator, clips
+            // popup, task editor, ink preview, tidy or meeting structuring.
+            // What stays is the vault watcher below (a no-op without a
+            // vault) and the docs viewer windows created on demand.
             if let Some(vault_path) = cfg.settings.vault_path {
                 let path = std::path::PathBuf::from(&vault_path);
                 if path.is_dir() {
@@ -246,41 +229,6 @@ pub fn run() {
                     let _ = tasks::start_watcher(app.handle().clone(), &state.0, path);
                 }
             }
-            // Created hidden regardless of the enabled flag (the flag only
-            // gates the hotkey) so toggling it on later never has to build a
-            // window from inside an event handler.
-            if let Err(e) = quick_capture::create_window(app.handle()) {
-                crate::diag!("quick-capture: failed to create window: {e}");
-            }
-            quick_capture::apply_shortcut(app.handle());
-            // Same rationale: the ink preview is built hidden up front so
-            // opening it from the Ink tab is a show, not a build.
-            if let Err(e) = ink_preview::create_window(app.handle()) {
-                crate::diag!("ink-preview: failed to create window: {e}");
-            }
-            // Same rationale: the task editor is built hidden up front so
-            // opening a task from the board is a show, not a build.
-            if let Err(e) = task_editor::create_window(app.handle()) {
-                crate::diag!("task-editor: failed to create window: {e}");
-            }
-            // Same rationale: build the (hidden) voice indicator window up
-            // front so the hotkey handler only ever shows/hides it.
-            if let Err(e) = voice::create_window(app.handle()) {
-                crate::diag!("voice: failed to create indicator window: {e}");
-            }
-            voice::apply_shortcut(app.handle());
-            // Same rationale again: the clips popup is built hidden up front
-            // so the gesture handler only ever shows it.
-            if let Err(e) = clips::create_window(app.handle()) {
-                crate::diag!("clips: failed to create popup window: {e}");
-            }
-            clips::apply_gesture(app.handle());
-            // Background vault-tidy scheduler (T-0050). Cheap mechanical checks;
-            // only launches an agent when there is actual housekeeping to do.
-            tidy::start_scheduler(app.handle().clone());
-            // Background meeting-transcript structuring (T-0318). Only fires
-            // while a meeting is active and new sections exist.
-            voice_struct::start_scheduler(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -380,6 +328,7 @@ pub fn run() {
             commands::diagram_edit_status,
             commands::has_snapshot,
             commands::restore_diagram_snapshot,
+            commands::docs_create_diagram,
             commands::docs_roots,
             commands::add_docs_root,
             commands::remove_docs_root,

@@ -2,26 +2,19 @@ use crate::models::Config;
 use crate::vault_settings;
 use std::path::PathBuf;
 
-/// `~/.workhub` — the single home directory for everything workhub persists
-/// (config, voice history, whisper models, task worktree workspaces).
+/// `~/.shared-docs-viewer` — the single home directory for everything this
+/// viewer persists (config, recent files, diagram snapshots).
 ///
-/// This used to be `%APPDATA%\workhub` (via `dirs::config_dir()`); see
-/// `migrate_from_appdata` for why it moved and how existing installs are
-/// carried over.
+/// Split off workhub's `~/.workhub` on purpose: the viewer is a separate app
+/// and must never read or write the workhub config (T-1001).
 pub fn config_dir() -> PathBuf {
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".workhub")
+        .join(".shared-docs-viewer")
 }
 
 fn config_file() -> PathBuf {
     config_dir().join("config.json")
-}
-
-/// The old `%APPDATA%\workhub` location, used only to locate data to migrate
-/// out of on first run against the new home. Never written to again.
-fn old_appdata_dir() -> Option<PathBuf> {
-    dirs::config_dir().map(|d| d.join("workhub"))
 }
 
 pub fn workspaces_dir() -> PathBuf {
@@ -73,63 +66,40 @@ pub fn save(cfg: &Config) -> Result<(), String> {
     vault_settings::write(cfg)
 }
 
-/// One-time migration from the old `%APPDATA%\workhub` home to the new
-/// `~/.workhub` one (T-0064). `%APPDATA%\Roaming` has been observed to
-/// silently reject writes on at least one machine (folder-shielding
-/// antivirus is the working hypothesis — `workspaces_dir()` already worked
-/// around the same phenomenon before this change); a plain dot-folder under
-/// the user's home directory does not have this problem.
-///
-/// Must run before `load()` is first called. Copies `config.json` and
-/// `voice-history.json`, and renames (moves) the `models/` directory — all
-/// best-effort: failures are logged to stderr and never stop startup, and
-/// the old location is never deleted so this is always reversible by hand.
-/// Skips entirely once the new location already has a `config.json`, so it
-/// only ever runs once per machine.
+/// One-time migration from workhub's home to the viewer's own (T-1001).
+/// Only `config.json` is carried over, so a registered document root survives
+/// the move; run history and models stay with workhub. Best-effort: failures
+/// are logged to stderr and never stop startup, and the old location is never
+/// deleted so this is always reversible by hand. Skips entirely once the new
+/// location already has a `config.json`, so it only ever runs once per
+/// machine. Must run before the first `load()` call.
 pub fn migrate_from_appdata() {
     let new_dir = config_dir();
     if new_dir.join("config.json").exists() {
         return;
     }
-    let Some(old_dir) = old_appdata_dir() else {
-        return;
-    };
+    let old_dir = dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".workhub");
     if !old_dir.join("config.json").exists() {
         return;
     }
 
     if let Err(e) = std::fs::create_dir_all(&new_dir) {
         crate::diag!(
-            "workhub migration: cannot create {}: {e}",
+            "shared-docs-viewer migration: cannot create {}: {e}",
             new_dir.display()
         );
         return;
     }
 
-    for file_name in ["config.json", "voice-history.json"] {
-        let src = old_dir.join(file_name);
-        let dst = new_dir.join(file_name);
-        if !src.exists() {
-            continue;
-        }
-        if let Err(e) = std::fs::copy(&src, &dst) {
-            crate::diag!(
-                "workhub migration: cannot copy {} to {}: {e}",
-                src.display(),
-                dst.display()
-            );
-        }
-    }
-
-    let old_models = old_dir.join("models");
-    if old_models.is_dir() {
-        let new_models = new_dir.join("models");
-        if let Err(e) = std::fs::rename(&old_models, &new_models) {
-            crate::diag!(
-                "workhub migration: cannot move {} to {}: {e}",
-                old_models.display(),
-                new_models.display()
-            );
-        }
+    let src = old_dir.join("config.json");
+    let dst = new_dir.join("config.json");
+    if let Err(e) = std::fs::copy(&src, &dst) {
+        crate::diag!(
+            "shared-docs-viewer migration: cannot copy {} to {}: {e}",
+            src.display(),
+            dst.display()
+        );
     }
 }

@@ -200,7 +200,10 @@ fn scope_of(parts: &[String]) -> String {
 
 /// The text of a new note of `kind`. The 2x2 matrix starts empty; the flow and
 /// the PFD start with a small working example.
-fn skeleton(kind: &str, title: &str, range: &str, now: &str) -> Result<String, String> {
+///
+/// `pub(crate)` for the Docs tab's folder-local creation (`docs_create_diagram`),
+/// which needs the same starting text without a vault project around it (T-1001).
+pub(crate) fn skeleton(kind: &str, title: &str, range: &str, now: &str) -> Result<String, String> {
     Ok(match kind {
         "schedule" => crate::schedule::skeleton(title, range, now),
         "mindmap" => crate::mindmap::skeleton(title, now),

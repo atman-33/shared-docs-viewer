@@ -1,5 +1,5 @@
 {
-  "name": "workhub",
+  "name": "shared-docs-viewer",
   "private": true,
   "type": "module",
   "scripts": {

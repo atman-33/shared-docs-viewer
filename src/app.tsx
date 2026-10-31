@@ -1,84 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  ChevronsRight,
-  CircleHelp,
-  BookOpen,
-  ClipboardList,
-  Drama,
-  FolderOpen,
-  GitBranch,
-  Inbox,
-  ListTodo,
-  Mic,
-  Minus,
-  Music,
-  FolderKanban,
-  Pencil,
-  Plus,
-  Puzzle,
-  RotateCcw,
-  Shapes,
-  Settings as SettingsIcon,
-  Timer,
-} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BookOpen, Minus, Plus, RotateCcw, Settings as SettingsIcon } from "lucide-react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
-import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { ClipsView } from "@/components/clips-view";
 import { DocsView } from "@/components/docs/docs-view";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { HelpView } from "@/components/help-view";
-import { InboxView } from "@/components/inbox-view";
-import { InkView } from "@/components/ink-view";
-import { MemorySetupBanner } from "@/components/memory-setup-banner";
-import { DiagramsView } from "@/components/diagrams/diagrams-view";
-import { MusicView } from "@/components/music/music-view";
-import { PersonaView } from "@/components/persona-view";
-import { PluginsView } from "@/components/plugins-view";
-import { BreakingChangeBanner } from "@/components/breaking-change-banner";
-import { PluginUpdateBanner } from "@/components/plugin-update-banner";
-import { NavListenerButton } from "@/components/nav-listener-button";
-import { NavMusicControl } from "@/components/music/nav-music-control";
-import { ProjectsView, type ProjectTarget } from "@/components/projects/projects-view";
-import { ReposView } from "@/components/repos-view";
 import { SettingsDialog } from "@/components/settings-dialog";
-import { TasksView } from "@/components/tasks-view";
-import {
-  TemplateAutoAppliedBanner,
-  TemplateUpdateBanner,
-} from "@/components/template-update-banner";
-import { TimerView } from "@/components/timer/timer-view";
-import { UpdateBanner } from "@/components/update-banner";
-import { VoiceView } from "@/components/voice-view";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { Hint } from "@/components/ui/hint";
-import { NavTabButton } from "@/components/nav-tab-button";
-import { TabQuickSwitch } from "@/components/tab-quick-switch";
-import { hideTab, reorderVisible, resolveTabLayout, showTab, toStored } from "@/lib/tab-layout";
-import type { TabLayout } from "@/lib/tab-layout";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
@@ -90,74 +17,14 @@ import {
   normalizeAppZoom,
   parseAppZoom,
 } from "@/lib/app-zoom";
-import { installedVersions, workhubPluginAlert, type PluginAlert } from "@/lib/plugins";
-import { useRecurringTasks } from "@/lib/use-recurring-tasks";
-import { applyLocale, setWindowTitle, useLocale, useT, type MessageKey } from "@/lib/i18n";
-import { useTidyNotifications } from "@/lib/use-tidy-notifications";
+import { applyLocale, setWindowTitle, useLocale, useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import type { Notice, Settings, TemplateDiff, UpdateInfo } from "@/types";
+import type { Settings } from "@/types";
 
 /**
- * One tab's slot in the shell.
- *
- * Every tab is mounted at once and the inactive ones are hidden with CSS,
- * so that switching back to a tab does not throw away its scroll position,
- * its unsaved edits or its watchers. The cost is that a hidden tab still
- * renders — and before this had a boundary, an exception in one of them
- * unmounted the entire app, blanking the window over a view the user could
- * not even see (T-0254). The boundary is inside the hiding wrapper so a
- * failed tab reports itself where that tab lives, and the others carry on.
- */
-function TabPanel({ id, tab, children }: { id: Tab; tab: Tab; children: ReactNode }) {
-  return (
-    <div className={cn("h-full", tab !== id && "hidden")}>
-      <ErrorBoundary label={id}>{children}</ErrorBoundary>
-    </div>
-  );
-}
-
-type Tab =
-  | "tasks"
-  | "projects"
-  | "inbox"
-  | "repos"
-  | "diagrams"
-  | "docs"
-  | "music"
-  | "timer"
-  | "voice"
-  | "clips"
-  | "ink"
-  | "persona"
-  | "plugins"
-  | "help";
-
-// `persona` is always shown. When the plugin ships no characters the tab
-// explains what is missing and hands over the prompt that installs it — a tab
-// that vanishes teaches the owner nothing about why (T-0215).
-const TABS: { key: Tab; labelKey: MessageKey; icon: typeof ListTodo }[] = [
-  { key: "tasks", labelKey: "nav.tasks", icon: ListTodo },
-  { key: "projects", labelKey: "nav.projects", icon: FolderKanban },
-  { key: "repos", labelKey: "nav.repos", icon: GitBranch },
-  { key: "diagrams", labelKey: "nav.diagrams", icon: Shapes },
-  { key: "docs", labelKey: "nav.docs", icon: BookOpen },
-  { key: "inbox", labelKey: "nav.inbox", icon: Inbox },
-  { key: "music", labelKey: "nav.music", icon: Music },
-  { key: "timer", labelKey: "nav.timer", icon: Timer },
-  { key: "voice", labelKey: "nav.voice", icon: Mic },
-  { key: "clips", labelKey: "nav.clips", icon: ClipboardList },
-  { key: "ink", labelKey: "nav.ink", icon: Pencil },
-  { key: "persona", labelKey: "nav.persona", icon: Drama },
-  { key: "plugins", labelKey: "nav.plugins", icon: Puzzle },
-  { key: "help", labelKey: "nav.help", icon: CircleHelp },
-];
-
-/**
- * App-wide zoom control (T-0346): a compact `%` readout in the nav cluster
- * whose popover holds −/+ buttons, a slider and a reset. The zoom itself is
- * the native WebView zoom (`getCurrentWebview().setZoom`), so px-sized
- * layouts like the schedule bars scale too — unlike CSS-only approaches.
- * Shortcuts: Ctrl+= / Ctrl+- / Ctrl+0, the way a browser does it.
+ * The viewer's shell (T-1001): one tab, docs. There is no tab strip, no
+ * vault setup and no plugin/template/memory banners — the viewer opens a
+ * shared folder, not a vault.
  */
 function ZoomControl() {
   const t = useT();
@@ -179,16 +46,10 @@ function ZoomControl() {
     } catch {
       // Persistence is a nicety; never break zooming over storage.
     }
-    // The native factor resets to 100% on every launch, so the remembered
-    // value is re-applied on startup (see the effect below).
     if (isTauri()) void getCurrentWebview().setZoom(value).catch(console.error);
   }, []);
 
   useEffect(() => {
-    // The window starts hidden (tauri.conf.json) so it never paints at 100%
-    // before the saved zoom lands (T-0491). Reveal it once the zoom is
-    // applied — or failed to apply; either way the user must get a window.
-    // Rust also reveals it after a timeout if this never runs.
     if (isTauri()) {
       getCurrentWebview()
         .setZoom(zoomRef.current)
@@ -266,236 +127,36 @@ function ZoomControl() {
 
 export default function App() {
   const t = useT();
-  const [tab, setTab] = useState<Tab>("tasks");
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
-  // Every path that changes `settings` (startup, the dialog, a vault switch)
-  // lands here, so the UI language follows without each one remembering to.
   const uiLocale = settings?.ui_locale;
   useEffect(() => {
     if (uiLocale !== undefined) applyLocale(uiLocale);
   }, [uiLocale]);
-  // The main window's title carries no per-session content, unlike the docs
-  // viewer's — so it just follows the display language directly (T-0423).
   const locale = useLocale();
   useEffect(() => {
     setWindowTitle("app.windowTitle");
   }, [locale]);
   const [version, setVersion] = useState("");
-  const [update, setUpdate] = useState<UpdateInfo | null>(null);
-  const [templateDiff, setTemplateDiff] = useState<TemplateDiff | null>(null);
-  // Paths applied silently on startup (T-0196) — shown as a dismissible
-  // note so a template change is never completely invisible.
-  const [autoApplied, setAutoApplied] = useState<string[]>([]);
-  const [memorySetupNeeded, setMemorySetupNeeded] = useState(false);
-  // Startup alert for the workhub plugin (T-0349): missing or outdated.
-  // Dismissed or resolved states clear it; re-checking recreates it.
-  const [pluginAlert, setPluginAlert] = useState<PluginAlert | null>(null);
-  // Breaking-change notices that apply to this vault and are unread (T-0377).
-  // Unlike the banners above, these describe damage that has already happened
-  // and that nothing else in the app will ever mention.
-  const [notices, setNotices] = useState<Notice[]>([]);
-  // Installed plugin versions, so a notice can hold its action back when the
-  // skill it names is not on this machine yet.
-  const [pluginVersions, setPluginVersions] = useState<Record<string, string>>({});
-  // Bumped after every settings save; views reload their config when it changes.
-  const [configVersion, setConfigVersion] = useState(0);
-  // Bumped when the Projects view creates, archives or restores a vault
-  // project. The `projects-changed` watcher event covers the same ground for
-  // writers outside the app (Obsidian, an agent), but the app's own actions
-  // must not depend on an event arriving — this is the deterministic half.
-  const [vaultProjectsVersion, setVaultProjectsVersion] = useState(0);
-  // Cross-tab focus: the Projects tab hands another tab a project slug (or a
-  // repository path) to select. Carried with a counter rather than the value
-  // alone so that asking for the *same* project twice still re-focuses it —
-  // the receiving view may have been navigated away from in between. `path`
-  // selects one note inside the tab (a diagram note for the Diagrams tab).
-  const [focus, setFocus] = useState<{ tab: Tab; value: string; path?: string; n: number } | null>(null);
-  const focusOn = useCallback((target: ProjectTarget, value: string, path?: string) => {
-    setFocus((prev) => ({ tab: target, value, path, n: (prev?.n ?? 0) + 1 }));
-    setTab(target);
-  }, []);
-  const focusFor = (t: Tab) =>
-    focus && focus.tab === t ? { value: focus.value, path: focus.path, n: focus.n } : undefined;
-  // When the tab strip is scrolled (narrow windows), a tab selected from
-  // elsewhere — the Projects view's cross-tab focus, the music control — can sit
-  // outside the visible slice. Pull it back into view on every change.
-  const activeTabRef = useRef<HTMLButtonElement | null>(null);
-  useEffect(() => {
-    activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [tab]);
-
-  // Overflow menu (T-0348): tabs scrolled out of the strip stay where they are —
-  // hiding them would restart the measure/hide loop — and the `»` button lists
-  // whichever are out of view so they stay one click away.
-  const stripRef = useRef<HTMLDivElement | null>(null);
-  const tabRefs = useRef(new Map<Tab, HTMLButtonElement>());
-
-  // The owner's arrangement of the bar (T-0684). A hidden tab that is open
-  // right now stays in the strip as a transient last entry, so the current
-  // position is never invisible; it leaves again once another tab is chosen.
-  const layout = resolveTabLayout(
-    TABS.map((tb) => tb.key),
-    settings?.tab_order ?? [],
-    settings?.hidden_tabs ?? [],
-  );
-  const displayedTabs: Tab[] = (
-    layout.hidden.includes(tab) ? [...layout.visible, tab] : layout.visible
-  ) as Tab[];
-  const displayedRef = useRef<Tab[]>(displayedTabs);
-  displayedRef.current = displayedTabs;
-  const [menuTab, setMenuTab] = useState<Tab | null>(null);
-  const applyLayout = useCallback((next: TabLayout) => {
-    const stored = toStored(next);
-    setSettings((prev) => (prev ? { ...prev, ...stored } : prev));
-    void api.patchSettings(stored).catch(console.error);
-  }, []);
-  const dragSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-  );
-  const onTabDragEnd = (e: DragEndEvent) => {
-    if (e.over && e.active.id !== e.over.id) {
-      applyLayout(reorderVisible(layout, String(e.active.id), String(e.over.id)));
-    }
-  };
-  const [overflowTabs, setOverflowTabs] = useState<Tab[]>([]);
-  const measureOverflow = useCallback(() => {
-    const strip = stripRef.current;
-    if (!strip) return;
-    const out: Tab[] = [];
-    if (strip.scrollWidth > strip.clientWidth + 1) {
-      const box = strip.getBoundingClientRect();
-      for (const key of displayedRef.current) {
-        const el = tabRefs.current.get(key);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.left < box.left - 1 || r.right > box.right + 1) out.push(key);
-      }
-    }
-    // Same content → same state: measuring on every scroll must not re-render.
-    setOverflowTabs((prev) =>
-      prev.length === out.length && prev.every((t, i) => t === out[i]) ? prev : out,
-    );
-  }, []);
-  const rafRef = useRef(0);
-  const scheduleMeasure = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(measureOverflow);
-  }, [measureOverflow]);
-  useEffect(() => {
-    const strip = stripRef.current;
-    if (!strip) return;
-    measureOverflow();
-    const ro = new ResizeObserver(scheduleMeasure);
-    ro.observe(strip);
-    strip.addEventListener("scroll", scheduleMeasure, { passive: true });
-    window.addEventListener("resize", scheduleMeasure);
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      ro.disconnect();
-      strip.removeEventListener("scroll", scheduleMeasure);
-      window.removeEventListener("resize", scheduleMeasure);
-    };
-  }, [measureOverflow, scheduleMeasure, tab, displayedTabs.join(",")]);
-
-  useTidyNotifications();
-  // Recurring task rules (T-0110): checked on start and every few minutes, so a
-  // machine booted after a rule's time still gets that occurrence's task.
-  useRecurringTasks(configVersion);
-
-  const checkTemplate = useCallback(async (vaultPath: string, autoApply = false) => {
-    try {
-      // Updates that cannot lose user edits are applied first and silently
-      // (T-0196): asking about them was pure friction. Whatever the check
-      // reports afterwards is what genuinely needs a decision.
-      if (autoApply) {
-        const applied = await api.applySafeTemplateUpdates(vaultPath);
-        setAutoApplied(applied);
-      }
-      const diff = await api.checkVaultTemplate(vaultPath);
-      setTemplateDiff(diff);
-    } catch {
-      // Never block startup on a template-check failure.
-    }
-  }, []);
-
-  // The plugin check rides on `check_updates` rather than growing its own
-  // toggle (T-0349): one switch for "tell me when something is stale".
-  const checkPlugin = useCallback(async (vaultPath: string, alert = true) => {
-    try {
-      const state = await api.pluginsState(vaultPath);
-      // The versions are read either way — a notice needs them to decide
-      // whether its action is possible — but the *alert* stays behind the
-      // user's switch, since that one really is a "tell me when something
-      // newer exists" preference.
-      setPluginVersions(installedVersions(state));
-      if (alert) setPluginAlert(workhubPluginAlert(state));
-    } catch {
-      // Never block startup on a plugin-check failure.
-      setPluginAlert(null);
-    }
-  }, []);
-
-  // Notices are not behind `check_updates`. That switch means "tell me when
-  // something newer exists"; this is "something is already broken", which is
-  // not a preference about notifications (T-0377).
-  const checkNotices = useCallback(async (vaultPath: string) => {
-    try {
-      setNotices(await api.notices(vaultPath));
-    } catch {
-      // A notice that cannot be read must not stop the app opening.
-      setNotices([]);
-    }
-  }, []);
+  // Bumped after settings save; views reload their config when it changes.
+  const [, setConfigVersion] = useState(0);
 
   useEffect(() => {
     void (async () => {
       const cfg = await api.getConfig();
       setSettings(cfg.settings);
       setVersion(await api.appVersion());
-      if (cfg.settings.check_updates) {
-        setUpdate(await api.checkUpdate());
-      }
-      if (cfg.settings.vault_path) {
-        await checkPlugin(cfg.settings.vault_path, cfg.settings.check_updates);
-        await checkNotices(cfg.settings.vault_path);
-      }
-      if (cfg.settings.vault_path && cfg.settings.check_template_updates) {
-        await checkTemplate(
-          cfg.settings.vault_path,
-          cfg.settings.auto_apply_template_updates,
-        );
-      }
-      if (
-        cfg.settings.vault_path &&
-        cfg.settings.check_memory_setup &&
-        (cfg.settings.memory_claude_code || cfg.settings.memory_opencode)
-      ) {
-        try {
-          setMemorySetupNeeded(!(await api.memorySetupOk()));
-        } catch {
-          // Never block startup on the memory-setup check.
-        }
-      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveSettings = useCallback(async (next: Settings) => {
-    // Merge into the latest on-disk config so we never clobber projects/presets
-    // persisted by the views after our initial load.
     const cfg = await api.getConfig();
-    // Render what took effect, not what was sent: switching to a vault that
-    // already carries its own settings adopts those (T-0206).
     const saved = await api.saveConfig({ ...cfg, settings: next });
     setSettings(saved.settings);
     setConfigVersion((v) => v + 1);
   }, []);
 
-  // Re-read the config before opening Settings: the Voice, Ink, Clips and
-  // Docs tabs save their own settings straight to disk, so the copy held here
-  // can be stale — and the dialog saves its whole draft, which would silently
-  // revert whatever those tabs changed (T-0277).
   const openSettings = useCallback(async () => {
     try {
       const cfg = await api.getConfig();
@@ -509,287 +170,40 @@ export default function App() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex h-full flex-col overflow-hidden">
-        {update && (
-          <UpdateBanner update={update} currentVersion={version} onDismiss={() => setUpdate(null)} />
-        )}
-        {memorySetupNeeded && settings && (
-          <MemorySetupBanner
-            onDismiss={() => setMemorySetupNeeded(false)}
-            onDisable={() => {
-              setMemorySetupNeeded(false);
-              void saveSettings({ ...settings, check_memory_setup: false });
-            }}
-          />
-        )}
-        {autoApplied.length > 0 && (
-          <TemplateAutoAppliedBanner
-            paths={autoApplied}
-            onDismiss={() => setAutoApplied([])}
-          />
-        )}
-        {templateDiff && settings?.vault_path && (
-          <TemplateUpdateBanner
-            diff={templateDiff}
-            vaultPath={settings.vault_path}
-            onDismiss={() => setTemplateDiff(null)}
-            onApplied={() => void checkTemplate(settings.vault_path as string)}
-          />
-        )}
-        {pluginAlert && settings?.vault_path && (
-          <PluginUpdateBanner
-            alert={pluginAlert}
-            vaultPath={settings.vault_path}
-            onOpenPlugins={() => setTab("plugins")}
-            onResolved={() => void checkPlugin(settings.vault_path as string)}
-            onDismiss={() => setPluginAlert(null)}
-          />
-        )}
-        {/* Last in the stack, and the only one that is about damage rather
-            than availability — so it sits closest to the app it is about. */}
-        {settings?.vault_path &&
-          notices.map((notice) => (
-            <BreakingChangeBanner
-              key={notice.id}
-              notice={notice}
-              vaultPath={settings.vault_path as string}
-              pluginVersions={pluginVersions}
-              onOpenPlugins={() => setTab("plugins")}
-              onFiled={() => setTab("tasks")}
-              onMarkRead={(id) =>
-                saveSettings({
-                  ...(settings as Settings),
-                  notices_read: [...settings.notices_read, id],
-                }).then(() => setNotices((ns) => ns.filter((n) => n.id !== id)))
-              }
-              onDismiss={() => setNotices((ns) => ns.filter((n) => n.id !== notice.id))}
-            />
-          ))}
         <nav className="flex items-center gap-1 border-b bg-muted/30 px-3 py-1.5">
-          {/* The tab strip degrades with the window width (T-0207): all
-              fourteen tabs plus the status cluster need ~1570px, well past the 720px
-              minimum window size. Labels collapse below `xl` (the tooltip then
-              names the tab), the active tab keeps its label so the current
-              position stays readable, this container scrolls as the last
-              resort at the narrowest widths, and the `»` button (T-0348) lists
-              whichever tabs scrolled out of sight. */}
-          <ContextMenu>
-          <ContextMenuTrigger asChild>
-          <div
-            ref={stripRef}
-            onContextMenu={(e) => {
-              const el = (e.target as Element).closest("[data-tab-key]");
-              setMenuTab((el?.getAttribute("data-tab-key") as Tab | null) ?? null);
-            }}
-            className="nav-tabs-scroll flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
-            // The strip's scrollbar is hidden, and a plain wheel only produces a
-            // vertical delta — translate it so the wheel still reaches the tabs
-            // that scrolled out of sight.
-            onWheel={(e) => {
-              if (e.deltaX !== 0) return;
-              e.currentTarget.scrollLeft += e.deltaY;
-            }}
-          >
-            <DndContext
-              sensors={dragSensors}
-              collisionDetection={closestCenter}
-              modifiers={[restrictToHorizontalAxis]}
-              onDragEnd={onTabDragEnd}
-            >
-              <SortableContext items={layout.visible} strategy={horizontalListSortingStrategy}>
-                {displayedTabs.map((key) => {
-                  const entry = TABS.find((tb) => tb.key === key)!;
-                  return (
-                    <NavTabButton
-                      key={key}
-                      tabKey={key}
-                      label={t(entry.labelKey)}
-                      icon={entry.icon}
-                      active={tab === key}
-                      sortable={layout.visible.includes(key)}
-                      onSelect={() => setTab(key)}
-                      buttonRef={(el) => {
-                        if (tab === key) activeTabRef.current = el;
-                        if (el) tabRefs.current.set(key, el);
-                        else tabRefs.current.delete(key);
-                      }}
-                    />
-                  );
-                })}
-              </SortableContext>
-            </DndContext>
-          </div>
-          </ContextMenuTrigger>
-          <ContextMenuContent className="w-56">
-            {menuTab && (
-              <ContextMenuItem
-                disabled={layout.visible.length <= 1 || !layout.visible.includes(menuTab)}
-                onClick={() => applyLayout(hideTab(layout, menuTab))}
-              >
-                {t(layout.visible.length <= 1 ? "nav.hideTabLast" : "nav.hideTab", {
-                  tab: t(TABS.find((tb) => tb.key === menuTab)!.labelKey),
-                })}
-              </ContextMenuItem>
-            )}
-            {layout.hidden.length > 0 && (
-              <>
-                {menuTab && <ContextMenuSeparator />}
-                <ContextMenuLabel>{t("nav.hiddenTabs")}</ContextMenuLabel>
-                {layout.hidden.map((key) => {
-                  const entry = TABS.find((tb) => tb.key === key)!;
-                  const Icon = entry.icon;
-                  return (
-                    <ContextMenuItem key={key} onClick={() => applyLayout(showTab(layout, key))}>
-                      <Icon className="size-4" />
-                      {t("nav.showTab", { tab: t(entry.labelKey) })}
-                    </ContextMenuItem>
-                  );
-                })}
-              </>
-            )}
-            {((settings?.tab_order.length ?? 0) > 0 || layout.hidden.length > 0) && (
-              <>
-                <ContextMenuSeparator />
-                <ContextMenuItem
-                  onClick={() =>
-                    applyLayout(
-                      resolveTabLayout(
-                        TABS.map((tb) => tb.key),
-                        [],
-                        [],
-                      ),
-                    )
-                  }
-                >
-                  <RotateCcw className="size-4" />
-                  {t("nav.resetTabs")}
-                </ContextMenuItem>
-              </>
-            )}
-          </ContextMenuContent>
-          </ContextMenu>
-          {overflowTabs.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon-xs"
-                  variant="ghost"
-                  aria-label={t("nav.moreTabs")}
-                  className="shrink-0 text-muted-foreground"
-                >
-                  <ChevronsRight className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>{t("nav.moreTabs")}</DropdownMenuLabel>
-                {overflowTabs.map((key) => {
-                  const entry = TABS.find((tb) => tb.key === key)!;
-                  const Icon = entry.icon;
-                  return (
-                    <DropdownMenuItem key={key} onClick={() => setTab(key)}>
-                      <Icon className="size-4" />
-                      {t(entry.labelKey)}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <TabQuickSwitch
-            tabs={TABS.map((tb) => ({
-              key: tb.key,
-              label: t(tb.labelKey),
-              icon: tb.icon,
-              hidden: layout.hidden.includes(tb.key),
-            }))}
-            onSelect={(key) => setTab(key as Tab)}
-          />
+          <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+            <BookOpen className="size-3.5 text-muted-foreground" />
+            {t("nav.docs")}
+          </span>
           <div className="flex shrink-0 items-center gap-1">
-            <NavMusicControl onOpenMusic={() => setTab("music")} />
-            {settings?.vault_path && (
-              <Hint label={settings.vault_path}>
-                <span className="hidden max-w-48 items-center gap-1 truncate text-[11px] text-muted-foreground lg:flex">
-                  <FolderOpen className="size-3 shrink-0" />
-                  {settings.vault_path}
-                </span>
-              </Hint>
-            )}
             <ZoomControl />
-            <span className="hidden text-[11px] text-muted-foreground md:inline">
-              v{version}
-            </span>
-            <NavListenerButton />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="size-7"
-              aria-label={t("nav.settingsAria")}
-              onClick={() => void openSettings()}
+            <span
+              className={cn(
+                "hidden text-[11px] text-muted-foreground md:inline",
+                !version && "invisible",
+              )}
             >
-              <SettingsIcon className="size-4" />
-            </Button>
+              v{version || "…"}
+            </span>
+            <Hint label={t("nav.settingsAria")}>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="size-7"
+                aria-label={t("nav.settingsAria")}
+                onClick={() => void openSettings()}
+              >
+                <SettingsIcon className="size-4" />
+              </Button>
+            </Hint>
           </div>
         </nav>
         <div className="min-h-0 flex-1">
-          <TabPanel id="tasks" tab={tab}>
-            <TasksView
-              configVersion={configVersion}
-              projectsVersion={vaultProjectsVersion}
-              focus={focusFor("tasks")}
-              onSettingsChange={(s) => setSettings(s)}
-            />
-          </TabPanel>
-          <TabPanel id="projects" tab={tab}>
-            <ProjectsView
-              configVersion={configVersion}
-              active={tab === "projects"}
-              onNavigate={focusOn}
-              onProjectsChange={() => setVaultProjectsVersion((v) => v + 1)}
-            />
-          </TabPanel>
-          <TabPanel id="repos" tab={tab}>
-            <ReposView
-              configVersion={configVersion}
-              active={tab === "repos"}
-              focus={focusFor("repos")}
-            />
-          </TabPanel>
-          <TabPanel id="diagrams" tab={tab}>
-            <DiagramsView
-              configVersion={configVersion}
-              projectsVersion={vaultProjectsVersion}
-              focus={focusFor("diagrams")}
-            />
-          </TabPanel>
-          <TabPanel id="docs" tab={tab}>
-            <DocsView />
-          </TabPanel>
-          <TabPanel id="inbox" tab={tab}>
-            <InboxView configVersion={configVersion} active={tab === "inbox"} />
-          </TabPanel>
-          <TabPanel id="music" tab={tab}>
-            <MusicView configVersion={configVersion} />
-          </TabPanel>
-          <TabPanel id="timer" tab={tab}>
-            <TimerView />
-          </TabPanel>
-          <TabPanel id="voice" tab={tab}>
-            <VoiceView configVersion={configVersion} />
-          </TabPanel>
-          <TabPanel id="clips" tab={tab}>
-            <ClipsView configVersion={configVersion} />
-          </TabPanel>
-          <TabPanel id="ink" tab={tab}>
-            <InkView configVersion={configVersion} />
-          </TabPanel>
-          <TabPanel id="persona" tab={tab}>
-            <PersonaView active={tab === "persona"} />
-          </TabPanel>
-          <TabPanel id="plugins" tab={tab}>
-            <PluginsView active={tab === "plugins"} vaultPath={settings?.vault_path ?? ""} />
-          </TabPanel>
-          <TabPanel id="help" tab={tab}>
-            <HelpView />
-          </TabPanel>
+          <div className="h-full">
+            <ErrorBoundary label="docs">
+              <DocsView />
+            </ErrorBoundary>
+          </div>
         </div>
         {settings && (
           <SettingsDialog

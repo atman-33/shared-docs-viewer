@@ -340,7 +340,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
 
   useEffect(() => {
     if (!vaultPath) return;
-    void api.listTasks(vaultPath).then(setTasks);
+    void api.listTasks(vaultPath ?? "").then(setTasks);
     void loadProjects();
   }, [vaultPath, loadProjects]);
 
@@ -912,7 +912,10 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
     setWindow((prev) => (prev ? windowAround(prev, today) : prev));
   }, [window_, today, scrollToTodayCell]);
 
-  if (!vaultPath) {
+  // The viewer (T-1001) hosts this view on a shared folder with no vault:
+  // reading, writing and the grid work path-locally, and only the
+  // vault-bound extras (project picker, task links, export) stay quiet.
+  if (!vaultPath && !embedded) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
         {t("schedule.view.noVault")}
@@ -1016,7 +1019,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
                 void (async () => {
                   const win = window_ ?? defaultWindow();
                   const created = await api.createSchedule(
-                    vaultPath,
+                    vaultPath ?? "",
                     targetProject,
                     newTitle.trim(),
                     formatRange(win.start, win.end),
@@ -1348,8 +1351,8 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
                 onCreateItem={(kind, from, to) => createItem(kind, from, to)}
                 clipboard={{ canPaste, onCopy: copyItem, onDuplicate: duplicateItem, onPaste: pasteItem }}
                 onMoveTaskDue={(taskId, date) => {
-                  void api.updateTask(vaultPath, { id: taskId, due: date }).then(() => {
-                    void api.listTasks(vaultPath).then(setTasks);
+                  void api.updateTask(vaultPath ?? "", { id: taskId, due: date }).then(() => {
+                    void api.listTasks(vaultPath ?? "").then(setTasks);
                   });
                 }}
                 onPanWindow={panBy}
@@ -1429,7 +1432,7 @@ export function ScheduleView({ configVersion, projectsVersion = 0, focus, embedd
       </ResizablePanelGroup>
 
       <ProjectCreateDialog
-        vaultPath={vaultPath}
+        vaultPath={vaultPath ?? ""}
         open={projectDialogOpen}
         onOpenChange={setProjectDialogOpen}
         onCreated={(slug) => {

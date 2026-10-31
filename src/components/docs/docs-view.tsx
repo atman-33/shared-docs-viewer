@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDefaultLayout } from "react-resizable-panels";
-import { ChevronsDownUp, Link2, RefreshCw, Search } from "lucide-react";
+import { ChevronsDownUp, Link2, Plus, RefreshCw, Search } from "lucide-react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { DocsCreateDiagramDialog } from "@/components/docs/docs-create-diagram-dialog";
 import { DocsFileList } from "@/components/docs/docs-file-list";
 import { DocsPreview } from "@/components/docs/docs-preview";
 import { DocsRootsBar } from "@/components/docs/docs-roots-bar";
@@ -126,6 +127,11 @@ export function DocsView() {
   const [openPathBusy, setOpenPathBusy] = useState(false);
   const [openPathNotice, setOpenPathNotice] = useState("");
   const [openPathCandidates, setOpenPathCandidates] = useState<DocsOpenPathMatch[]>([]);
+  // Creating a diagram note in the folder being read (T-1001). `createDir`
+  // is fixed when the dialog opens — from the toolbar it follows the cursor,
+  // from a row's menu it is that row's folder.
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDir, setCreateDir] = useState("");
   // How the candidates on offer were found, so picking one says the same.
   const [openPathHow, setOpenPathHow] = useState<OpenPathHow>("tail");
 
@@ -361,7 +367,23 @@ export function DocsView() {
     [shortcuts, saveShortcuts],
   );
 
-  const actions = useEntryActions(setError, toggleShortcut, isShortcut);
+  /** Where a toolbar-opened dialog creates: the folder the cursor is on, the
+   * parent of the file it is on, else the listed folder, else the root. */
+  const createTargetDir = useCallback(() => {
+    if (cursor) {
+      if (cursor === selected?.path) return selected.path;
+      if (dirs[cursor]?.status === "ready") return cursor;
+      return parentPath(cursor);
+    }
+    return selectedDir || selected?.path || "";
+  }, [cursor, dirs, selectedDir, selected]);
+
+  const openCreateDialog = useCallback((dir: string) => {
+    setCreateDir(dir);
+    setCreateOpen(true);
+  }, []);
+
+  const actions = useEntryActions(setError, toggleShortcut, isShortcut, openCreateDialog);
 
   /** Expands the tree down to `path` and puts the cursor on it. */
   const reveal = useCallback(
@@ -485,6 +507,18 @@ export function DocsView() {
       .finally(() => setOpenPathBusy(false));
   }, [openPathText, openPathBusy, openResolvedPath, selected?.path]);
 
+  /** Opens a freshly created diagram note: the folder is already showing,
+   * so only the tree path, the document and a re-read are needed. */
+  const onDiagramCreated = useCallback(
+    (path: string) => {
+      setSelectedDir(parentPath(path));
+      reveal(path);
+      openDoc(path);
+      refresh();
+    },
+    [reveal, openDoc, refresh],
+  );
+
   // A pick belongs to the list it was made in (T-0400): another root, another
   // folder or the other layout puts different rows on screen, and a pick that
   // outlived them would copy files nobody can see any more.
@@ -532,6 +566,17 @@ export function DocsView() {
           void loadDocsSettings();
           refresh();
         }}
+      />
+
+      {/* A diagram note beside the folder being read (T-1001): `createDir`
+          is the toolbar's cursor rule or the row menu's folder. */}
+      <DocsCreateDiagramDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        dir={createDir}
+        defaultKind="mindmap"
+        onCreated={onDiagramCreated}
+        onError={setError}
       />
 
       {error && (
@@ -597,6 +642,17 @@ export function DocsView() {
                     onClick={refresh}
                   >
                     <RefreshCw className={cn(refreshing && "animate-spin")} />
+                  </Button>
+                </Hint>
+                <Hint label={t("diagram.create.title")}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t("diagram.create.title")}
+                    disabled={!selected}
+                    onClick={() => openCreateDialog(createTargetDir())}
+                  >
+                    <Plus />
                   </Button>
                 </Hint>
                 <Hint label={t("docs.view.openPathHint")}>

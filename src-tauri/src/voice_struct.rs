@@ -21,7 +21,7 @@ use crate::storage;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 
 #[cfg(windows)]
@@ -29,8 +29,6 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
-/// How often the scheduler wakes to check for a due run.
-const TICK_SECS: u64 = 30;
 /// Frontend event emitted whenever struct state changes.
 const STATUS_EVENT: &str = "voice:struct-updated";
 
@@ -72,48 +70,6 @@ fn now() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|s| s.as_secs())
         .unwrap_or(0)
-}
-
-/// Starts the background scheduler thread. Sleeps first, so starting a
-/// meeting never fires a run instantly at app launch.
-pub fn start_scheduler(app: AppHandle) {
-    std::thread::spawn(move || loop {
-        std::thread::sleep(Duration::from_secs(TICK_SECS));
-        tick(&app);
-    });
-}
-
-fn tick(app: &AppHandle) {
-    let settings = storage::load().settings;
-    if settings.meeting_struct_interval_secs == 0 {
-        return;
-    }
-    let Some(info) = crate::voice_meeting::status(app) else {
-        return;
-    };
-    let state = app.state::<StructState>();
-    let run = state.inner.lock().unwrap();
-    if run.running {
-        return; // Don't stack runs.
-    }
-    let due = run
-        .last_start
-        .map(|t| now().saturating_sub(t) >= settings.meeting_struct_interval_secs)
-        .unwrap_or(true);
-    if !due || info.entries <= run.structured_entries {
-        return; // Too soon, or nothing new — zero tokens either way.
-    }
-    let covered = run.structured_entries;
-    drop(run);
-    spawn_run(
-        app.clone(),
-        &info.id,
-        &info.started,
-        info.entries,
-        covered,
-        &settings.meeting_struct_assignee,
-        &settings.meeting_struct_model,
-    );
 }
 
 /// Manual "Structure now". Works regardless of the interval (but not when it

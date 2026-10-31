@@ -3849,6 +3849,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "shared-docs-viewer"
+version = "0.1.0"
+dependencies = [
+ "cpal",
+ "dirs 5.0.1",
+ "flate2",
+ "image",
+ "include_dir",
+ "notify",
+ "percent-encoding",
+ "portable-pty",
+ "serde",
+ "serde_json",
+ "sha1",
+ "sha2",
+ "similar",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-dialog",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "trash",
+ "ureq",
+ "whisper-rs",
+ "windows 0.61.3",
+]
+
+[[package]]
 name = "shared_library"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6038,38 +6070,6 @@ dependencies = [
  "wayland-client",
  "wayland-protocols",
  "wayland-protocols-wlr",
-]
-
-[[package]]
-name = "workhub"
-version = "0.171.0"
-dependencies = [
- "cpal",
- "dirs 5.0.1",
- "flate2",
- "image",
- "include_dir",
- "notify",
- "percent-encoding",
- "portable-pty",
- "serde",
- "serde_json",
- "sha1",
- "sha2",
- "similar",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-dialog",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "trash",
- "ureq",
- "whisper-rs",
- "windows 0.61.3",
 ]
 
 [[package]]

@@ -291,6 +291,10 @@ export const api = {
   docsOpenExternal: (path: string) => invoke<void>("docs_open_external", { path }),
   /** Shows a file or folder in Explorer, selected in its parent. */
   docsReveal: (path: string) => invoke<void>("docs_reveal", { path }),
+  /** Creates a diagram note inside a registered document root (T-1001).
+   * `dir` must be a folder inside a registered root. Returns the new path. */
+  docsCreateDiagram: (dir: string, kind: string, title: string) =>
+    invoke<string>("docs_create_diagram", { dir, kind, title }),
   /** One directory only — the tree calls again when a folder is opened. */
   docsListDir: (path: string) => invoke<DocsEntry[]>("docs_list_dir", { path }),
   docsReadFile: (path: string) => invoke<string>("docs_read_file", { path }),

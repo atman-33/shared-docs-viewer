@@ -1395,7 +1395,10 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
 
   // ---- render -------------------------------------------------------------
 
-  if (!vaultPath) {
+  // The viewer (T-1001) hosts this view on a shared folder with no vault:
+  // reading, writing and the canvas work path-locally, and only the
+  // vault-bound extras (project picker, task links, export) stay quiet.
+  if (!vaultPath && !embedded) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
         {t("mindmap.view.noVault")}
@@ -1412,7 +1415,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
           {t("mindmap.view.newProject")}
         </Button>
         <ProjectCreateDialog
-          vaultPath={vaultPath}
+          vaultPath={vaultPath ?? ""}
           open={projectDialogOpen}
           onOpenChange={setProjectDialogOpen}
           onCreated={(slug) => {
@@ -1822,7 +1825,7 @@ export function MindmapView({ configVersion, projectsVersion = 0, focus, embedde
       )}
 
       <ProjectCreateDialog
-        vaultPath={vaultPath}
+        vaultPath={vaultPath ?? ""}
         open={projectDialogOpen}
         onOpenChange={setProjectDialogOpen}
         onCreated={(slug) => {

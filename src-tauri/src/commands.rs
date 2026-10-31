@@ -12,7 +12,7 @@ use crate::tasks::{self, CreateTaskInput, UpdateTaskInput, WatcherState};
 use crate::terminal::{self, TerminalState};
 use crate::vault_note;
 use crate::vault_project;
-use crate::{actions, git, harness, storage, update};
+use crate::{actions, diagram, git, harness, storage, update};
 use serde::Serialize;
 use std::path::PathBuf;
 use tauri::{Emitter, Manager};
@@ -1140,6 +1140,9 @@ pub fn run_diagram_edit(
 
 /// Copies the diagram-edit prompt for `path` to the clipboard, for pasting into
 /// an interactive agent session. `instruction` may be empty.
+///
+/// The viewer ships no plugin, so the prompt names the bundled skill file and
+/// its rules directory for the agent to read (T-1001).
 #[tauri::command]
 pub fn copy_diagram_edit_prompt(
     app: tauri::AppHandle,
@@ -1147,11 +1150,19 @@ pub fn copy_diagram_edit_prompt(
     instruction: String,
     confirm: bool,
 ) -> Result<(), String> {
+    let skill = diagram_edit::skill_files(&app).map(|(file, rules)| {
+        (
+            file.to_string_lossy().replace('\\', "/"),
+            rules.to_string_lossy().replace('\\', "/"),
+        )
+    });
+    let skill_ref = skill.as_ref().map(|(f, r)| (f.as_str(), r.as_str()));
     let prompt = diagram_edit::build_copy_prompt(
         &path.replace('\\', "/"),
         &instruction,
         confirm,
         &storage::load().settings.language,
+        skill_ref,
     );
     app.clipboard()
         .write_text(prompt)
@@ -1321,6 +1332,42 @@ pub async fn docs_list_dir(path: String) -> Result<Vec<DocsEntry>, String> {
 pub async fn docs_read_file(path: String) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         docs::guarded_read_doc(&storage::load().settings, &path)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Creates a diagram note inside a registered document root (T-1001).
+///
+/// The Docs tab's own creation path: `diagram::create_diagram` needs a vault
+/// project, which the viewer does not have. `dir` must be a folder inside a
+/// registered root (the same containment guard as the reads); the note gets
+/// the kind's starting text and a free `<title>.md` name. Returns the new
+/// note's path. Renaming and deleting stay out of the shell (T-1002).
+#[tauri::command]
+pub async fn docs_create_diagram(
+    dir: String,
+    kind: String,
+    title: String,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if !diagram::KINDS.contains(&kind.as_str()) {
+            return Err(format!("unknown diagram type '{kind}'"));
+        }
+        let settings = storage::load().settings;
+        let folder = docs::resolve_within_roots(&dir, &docs::allowed_roots(&settings))?;
+        if !folder.is_dir() {
+            return Err(format!("{dir} is not a folder"));
+        }
+        let title = match title.trim() {
+            "" => kind.clone(),
+            t => t.to_string(),
+        };
+        let content = diagram::skeleton(&kind, &title, "", &vault_note::today())
+            .map_err(|e| e.to_string())?;
+        let path = vault_note::unique_note_path(&folder, &title, &kind, None);
+        std::fs::write(&path, &content).map_err(|e| e.to_string())?;
+        Ok(vault_note::norm_path(&path))
     })
     .await
     .map_err(|e| e.to_string())?
