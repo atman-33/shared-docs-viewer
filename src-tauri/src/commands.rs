@@ -2492,7 +2492,10 @@ mod tests {
     /// form the guard and the availability check compare against.
     #[test]
     fn normalize_keeps_unc_and_drive_roots_usable() {
-        assert_eq!(normalize_docs_path(r"\\server\share\docs\"), "//server/share/docs");
+        assert_eq!(
+            normalize_docs_path(r"\\server\share\docs\"),
+            "//server/share/docs"
+        );
         assert_eq!(normalize_docs_path("//server/share/"), "//server/share");
         assert_eq!(normalize_docs_path(r"G:\docs\"), "G:/docs");
         // A bare drive root keeps its slash — "G:" alone is not a folder.
