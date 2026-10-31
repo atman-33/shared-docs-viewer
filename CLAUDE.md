@@ -11,7 +11,7 @@ as later modules.
 ```powershell
 npm install                # frontend dependencies (first time)
 npm run tauri dev          # run the app with hot reload (or: npm run tauri:dev)
-npx tauri build --no-bundle # release build -> src-tauri/target/release/workhub.exe
+npx tauri build --no-bundle # release build -> src-tauri/target/release/shared-docs-viewer.exe
 npm run build              # typecheck + build frontend only
 
 # in src-tauri/

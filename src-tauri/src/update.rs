@@ -2,7 +2,7 @@
 //!
 //! Contract with the release workflow (.github/workflows/release.yml):
 //! - releases are tagged `vX.Y.Z` and the tag equals the Cargo.toml version
-//! - every release carries a bare `workhub.exe` asset (exactly that name)
+//! - every release carries a bare `shared-docs-viewer.exe` asset (exactly that name)
 //!
 //! Renaming the asset or changing the tag scheme breaks every installed copy.
 
@@ -10,7 +10,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-pub const REPO: &str = "atman-33/workhub";
+pub const REPO: &str = "atman-33/shared-docs-viewer";
 
 pub fn current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -35,11 +35,11 @@ pub fn is_newer(tag: &str, current: &str) -> bool {
 fn agent() -> ureq::Agent {
     ureq::AgentBuilder::new()
         .timeout(Duration::from_secs(30))
-        .user_agent(concat!("workhub/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("shared-docs-viewer/", env!("CARGO_PKG_VERSION")))
         .build()
 }
 
-/// Returns (tag, download url of the workhub.exe asset) of the latest release,
+/// Returns (tag, download url of the shared-docs-viewer.exe asset) of the latest release,
 /// or None if the check fails for any reason (offline, rate limit, no release).
 pub fn check_latest() -> Option<(String, String)> {
     let resp = agent()
@@ -54,7 +54,7 @@ pub fn check_latest() -> Option<(String, String)> {
         .get("assets")?
         .as_array()?
         .iter()
-        .find(|a| a.get("name").and_then(|n| n.as_str()) == Some("workhub.exe"))?
+        .find(|a| a.get("name").and_then(|n| n.as_str()) == Some("shared-docs-viewer.exe"))?
         .get("browser_download_url")?
         .as_str()?
         .to_string();
@@ -69,7 +69,7 @@ fn unique_old_name(exe: &Path, unix_millis: u128) -> PathBuf {
     let file_name = exe
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "workhub.exe".to_string());
+        .unwrap_or_else(|| "shared-docs-viewer.exe".to_string());
     exe.with_file_name(format!("{file_name}.old-{unix_millis}"))
 }
 
@@ -87,7 +87,7 @@ fn unique_old_path(exe: &Path) -> PathBuf {
 fn describe_move_error(action: &str, dest: &Path, e: &std::io::Error) -> String {
     let mut msg = format!("{action} {}: {e}", dest.display());
     if e.raw_os_error() == Some(5) {
-        msg.push_str(" — close any other running workhub instances and try again");
+        msg.push_str(" — close any other running shared-docs-viewer instances and try again");
     }
     msg
 }
@@ -202,35 +202,50 @@ mod tests {
 
     #[test]
     fn unique_old_name_appends_timestamped_suffix() {
-        let exe = Path::new(r"C:\Programs\workhub\workhub.exe");
+        let exe = Path::new(r"C:\Programs\shared-docs-viewer\shared-docs-viewer.exe");
         let got = unique_old_name(exe, 1_700_000_000_123);
         assert_eq!(
             got,
-            Path::new(r"C:\Programs\workhub\workhub.exe.old-1700000000123")
+            Path::new(r"C:\Programs\shared-docs-viewer\shared-docs-viewer.exe.old-1700000000123")
         );
     }
 
     #[test]
     fn unique_old_name_is_unique_across_timestamps() {
-        let exe = Path::new("workhub.exe");
+        let exe = Path::new("shared-docs-viewer.exe");
         assert_ne!(unique_old_name(exe, 1), unique_old_name(exe, 2));
     }
 
     #[test]
     fn sweeps_fixed_old_timestamped_old_and_new() {
-        assert!(is_update_artifact("workhub.exe.old", "workhub.exe"));
         assert!(is_update_artifact(
-            "workhub.exe.old-1700000000123",
-            "workhub.exe"
+            "shared-docs-viewer.exe.old",
+            "shared-docs-viewer.exe"
         ));
-        assert!(is_update_artifact("workhub.exe.new", "workhub.exe"));
+        assert!(is_update_artifact(
+            "shared-docs-viewer.exe.old-1700000000123",
+            "shared-docs-viewer.exe"
+        ));
+        assert!(is_update_artifact(
+            "shared-docs-viewer.exe.new",
+            "shared-docs-viewer.exe"
+        ));
     }
 
     #[test]
     fn ignores_unrelated_files() {
-        assert!(!is_update_artifact("workhub.exe", "workhub.exe"));
-        assert!(!is_update_artifact("config.json", "workhub.exe"));
-        assert!(!is_update_artifact("other.exe.old", "workhub.exe"));
-        assert!(!is_update_artifact("workhub.exe.oldish", "workhub.exe"));
+        assert!(!is_update_artifact(
+            "shared-docs-viewer.exe",
+            "shared-docs-viewer.exe"
+        ));
+        assert!(!is_update_artifact("config.json", "shared-docs-viewer.exe"));
+        assert!(!is_update_artifact(
+            "other.exe.old",
+            "shared-docs-viewer.exe"
+        ));
+        assert!(!is_update_artifact(
+            "shared-docs-viewer.exe.oldish",
+            "shared-docs-viewer.exe"
+        ));
     }
 }
