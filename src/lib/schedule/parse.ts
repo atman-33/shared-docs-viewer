@@ -122,7 +122,7 @@ export interface NonWorking {
  * It lives on the note rather than in the app settings because comparing two
  * plans is the whole point of the feature: `案A.md` may run two-week sprints
  * from July while `案B.md` runs three-week ones from August, and a machine-wide
- * setting could not say that. Flat scalars keep the workhub frontmatter parser
+ * setting could not say that. Flat scalars keep the frontmatter parser
  * (and Obsidian's property UI) happy.
  */
 export interface SprintConfig {

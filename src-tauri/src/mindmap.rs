@@ -282,7 +282,6 @@ pub fn export_binary(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagram::{has_snapshot, restore_snapshot, save_snapshot};
     use std::path::PathBuf;
     use std::time::UNIX_EPOCH;
 
@@ -294,7 +293,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("workhub-mind-{name}-{nanos}"));
+        let dir = std::env::temp_dir().join(format!("viewer-mind-{name}-{nanos}"));
         fs::create_dir_all(dir.join("projects").join("demo")).unwrap();
         dir
     }
@@ -410,27 +409,6 @@ created: 2026-08-26\nupdated: 2026-08-26\n---\n\n## Nodes\n\n- N-001 root\n  - N
         let again = create_mindmap(&vault, "demo", "ideas").unwrap();
         let moved2 = delete_mindmap(&vault, &PathBuf::from(&again.path)).unwrap();
         assert_ne!(moved, moved2);
-        fs::remove_dir_all(&vault).ok();
-    }
-
-    #[test]
-    fn snapshot_round_trips_one_generation() {
-        let vault = temp_vault("snapshot");
-        let created = create_mindmap(&vault, "demo", "ideas").unwrap();
-        let path = PathBuf::from(&created.path);
-
-        assert!(!has_snapshot(&vault, &path));
-        save_snapshot(&vault, &path).unwrap();
-        assert!(has_snapshot(&vault, &path));
-
-        let edited = "---\ntype: mindmap\ntitle: ideas\n---\n\n## Nodes\n\n- N-001 replaced\n";
-        write_mindmap(&path, edited, 0).unwrap();
-
-        let restored = restore_snapshot(&vault, &path).unwrap();
-        assert!(restored.content.contains("- N-001 ideas"));
-        // Consumed: undo is exactly one generation deep.
-        assert!(!has_snapshot(&vault, &path));
-        assert!(restore_snapshot(&vault, &path).is_err());
         fs::remove_dir_all(&vault).ok();
     }
 

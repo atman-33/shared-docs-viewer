@@ -1,6 +1,6 @@
 /**
- * workhub colour names to the 24-bit RGB ints Miro's clipboard format holds
- * (T-0720).
+ * Maps diagram colour names to the 24-bit RGB ints Miro's clipboard format
+ * holds (T-0720).
  *
  * The values come from `colors.ts`, so a diagram keeps its colours when it
  * moves to Miro: a node carries its colour on its border (its fill stays

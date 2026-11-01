@@ -26,7 +26,7 @@ export interface Settings {
   opencode_cmd: string;
   use_herdr: boolean;
   herdr_cmd: string;
-  /** Start workhub when the user signs in to Windows (T-0258). Machine-local:
+  /** Start the app when the user signs in to Windows (T-0258). Machine-local:
    * it is backed by a registry entry holding this install's exe path. */
   autostart: boolean;
   check_updates: boolean;
@@ -142,8 +142,7 @@ export interface Settings {
   meeting_struct_model: string;
   /** Vault-relative folder for meeting files (transcript, minutes, run logs);
    * default voice/meetings. Vault-scoped. Empty or unsafe values fall back
-   * to the legacy ~/.workhub/meetings. Managed from the Voice tab's meeting
-   * panel, not from the Settings dialog. */
+   * to the legacy meetings folder. */
   voice_meetings_dir: string;
   /** Default HTML export destination; empty = the project's `attachments/`. */
   schedule_export_dir: string;
@@ -297,16 +296,6 @@ export interface DocsOpenPathMatch {
 }
 
 /** How a pasted path resolved (T-0362): a direct hit, or tail matches. */
-export interface DocsOpenPathResolution {
-  /** True when the pasted path itself sits inside a registered root. */
-  direct: boolean;
-  /** Candidates, longest tail first. */
-  matches: DocsOpenPathMatch[];
-  /** True when the candidates were found by searching the roots (T-0395):
-   * the folders on the way differ from the pasted path's. */
-  searched: boolean;
-}
-
 /** When a recurring rule fires. All times are the machine's local wall clock. */
 export interface RecurringSchedule {
   /** "daily" | "weekly" | "monthly" */
@@ -352,6 +341,20 @@ export interface RecurringRule {
   last_generated: number | null;
 }
 
+export interface DocsOpenPathResolution {
+  /** True when the pasted path itself sits inside a registered root. */
+  direct: boolean;
+  /** Candidates, longest tail first. */
+  matches: DocsOpenPathMatch[];
+  /** True when the candidates were found by searching the roots (T-0395):
+   * the folders on the way differ from the pasted path's. */
+  searched: boolean;
+}
+
+/** When a recurring rule fires. All times are the machine's local wall clock. */
+
+/** One recurring-task rule: a task template plus its schedule (T-0110). */
+
 /** One schedule note as the picker sees it (`list_schedules`). */
 /** One subfolder of a vault project, with how much is in it. */
 export interface VaultProjectFolder {
@@ -381,16 +384,6 @@ export interface VaultProjectIssue {
 
 /** One backlog item in a project's `backlog/`, as the task editor's picker
  * sees it. Enough to choose one without reading the notes inside it (T-0253). */
-export interface BacklogItem {
-  /** `B-NNN`, as a task's `backlog` field records it. */
-  id: string;
-  title: string;
-  /** idea | ready | doing | done | dropped, or empty when the item's entry
-   * note is missing or says nothing. */
-  status: string;
-  /** True when the item is a folder of notes (always true since T-0321). */
-  folder: boolean;
-}
 
 /** One team knowledge base that lives outside the vault, recorded as a note in
  * the project's `shared/` folder (T-0239). The folder is the registry — these
@@ -484,45 +477,13 @@ export interface ScheduleDoc {
 }
 
 /** One past AI diagram edit, newest first in `DiagramEditRun.history`. */
-export interface DiagramEditEntry {
-  instruction: string;
-  /** "completed" | "failed" */
-  state: string;
-  message: string;
-  seconds: number;
-  at: number;
-}
 
 /** Live state of the AI diagram-edit runner (`diagram_edit_status` /
  * `diagram-edit:status`), one for every kind of diagram. `state === "running"`
  * also means the open diagram is locked against app-side writes. */
-export interface DiagramEditRun {
-  /** "idle" | "running" | "completed" | "failed" */
-  state: string;
-  path: string | null;
-  instruction: string | null;
-  since: number | null;
-  summary: string | null;
-  error: string | null;
-  stalled: boolean;
-  can_undo: boolean;
-  history: DiagramEditEntry[];
-}
 
 /** One diagram note (Schedule, Mindmap, ...) as the Diagrams tab lists it
  * (`list_diagrams`, T-0680). */
-export interface DiagramFile {
-  /** Absolute path, forward slashes. */
-  path: string;
-  /** Owning project slug. */
-  project: string;
-  title: string;
-  /** The note's frontmatter `type`. */
-  kind: string;
-  updated: string;
-  /** `project`, or `backlog:B-NNN` for a note inside a backlog item's folder. */
-  scope: string;
-}
 
 /** A diagram note's full text plus the mtime that guards the next write
  * (`read_diagram`). */
@@ -572,141 +533,24 @@ export interface TidySettings {
 }
 
 /** Live state of the vault-tidy runner, from `tidy_status` / `tidy:status`. */
-export interface TidyRun {
-  /** "idle" | "running" | "completed" | "failed" */
-  state: string;
-  since: number | null;
-  at: number | null;
-  summary: string | null;
-  error: string | null;
-  session_id: string | null;
-  stalled: boolean;
-}
 
 /** The tidy agent's parked filing proposal for an inbox note (T-0104). */
-export interface InboxPending {
-  /** Why the agent did not file the note itself. */
-  reason: string;
-  /** Where it thinks the note belongs — free text, often several candidates. */
-  proposal: string;
-}
 
 /** One unfiled note in the vault's `inbox/` folder. */
-export interface InboxNote {
-  /** Absolute path, forward slashes — the id used by `readInboxNote`. */
-  path: string;
-  /** Vault-relative path, forward slashes. */
-  rel_path: string;
-  /** File name without the `.md` extension. */
-  name: string;
-  /** Last-modified time, unix seconds. */
-  modified: number;
-  /** Whole days since `modified`. */
-  age_days: number;
-  /** Old enough for the tidy routine to act on (tidy `stale_days`). */
-  stale: boolean;
-  pending: InboxPending | null;
-}
 
 /** Per-model download/active status for Settings > Voice. */
-export interface SttModelStatus {
-  model: string;
-  size_label: string;
-  downloaded: boolean;
-  active: boolean;
-}
 
 /** One recorded voice-input transcript (safety net for lost-focus pastes). */
-export interface VoiceHistoryEntry {
-  id: string;
-  text: string;
-  /** ISO 8601 UTC timestamp. */
-  created: string;
-  model: string;
-}
 
 /** One voice meeting session: dictation transcripts accumulated into a file. */
-export interface VoiceMeeting {
-  /** Start-time millis; also the Markdown file's basename. */
-  id: string;
-  /** ISO 8601 UTC timestamp of when the meeting started. */
-  started: string;
-  /** Number of transcript sections appended so far. */
-  entries: number;
-  /** Absolute path of the meeting's Markdown file. */
-  path: string;
-}
 
 /** Periodic meeting-structuring run state (T-0318). Null when no meeting. */
-export interface MeetingStructStatus {
-  /** A structuring run is in flight. */
-  running: boolean;
-  /** Seconds between runs; 0 means the periodic run is off. */
-  intervalSecs: number;
-  /** Transcript entries already covered by the last successful run. */
-  structuredEntries: number;
-  /** Unix seconds of the last successful run, if any. */
-  lastOkAt: number | null;
-  /** The last run's failure, if it failed (retried next tick). */
-  lastError: string | null;
-}
 
 /** Live voice capture state for the Meeting panel (T-0333). */
-export interface VoiceCaptureStatus {
-  /** A recording session is in flight. */
-  recording: boolean;
-  /** A session ended and its tail is being transcribed. */
-  transcribing: boolean;
-  /** A user stop is holding meeting auto-capture down. */
-  holdAuto: boolean;
-  /** A meeting session is active. */
-  meetingActive: boolean;
-}
 
 /** One paste-ready snippet in the clips picker. Array order is the display
  * order — the editor sends the whole list back after any edit or reorder. */
 /** A saved ink capture (annotated screenshot), as the Ink tab lists it. */
-export interface InkCapture {
-  path: string;
-  name: string;
-  width: number;
-  height: number;
-  /** File mtime in ms since the epoch; the list is sorted on it. */
-  modified_ms: number;
-  size_bytes: number;
-  /** `data:image/png;base64,...` of a downscaled preview. */
-  thumbnail: string;
-}
-
-export interface Clip {
-  id: string;
-  label: string;
-  text: string;
-}
-
-export interface WindowRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface Worktree {
-  path: string;
-  repo_path: string;
-  repo_name: string;
-  branch: string;
-  head: string;
-  /** True for the repo's primary working tree (not a task worktree). */
-  is_main: boolean;
-  bare: boolean;
-  locked: boolean;
-  detached: boolean;
-  /** Has uncommitted or untracked changes. */
-  dirty: boolean;
-  /** Task id parsed from a `task/<id>` branch, if any. */
-  task_id: string | null;
-}
 
 export type SortMode = "Name" | "Recent";
 
@@ -717,18 +561,6 @@ export interface Config {
   selected: string[];
   settings: Settings;
   sort: SortMode;
-}
-
-export interface GitInfo {
-  is_repo: boolean;
-  branch: string;
-  detached: boolean;
-  has_upstream: boolean;
-  ahead: number;
-  behind: number;
-  changes: number;
-  branches: string[];
-  error: string | null;
 }
 
 export interface UpdateInfo {
@@ -757,88 +589,20 @@ export interface DiagLogInfo {
 /** Health of the shared global keyboard listener behind the ink (double-press
  * Alt) and clips (double-tap Ctrl) gestures, from `input_listener_diagnostics`.
  * Durations are milliseconds; `null` means it has never happened. */
-export interface InputListenerDiagnostics {
-  running: boolean;
-  consumers: string[];
-  uptime_ms: number | null;
-  /** Time since the last key transition the listener saw. A large value while
-   * the user is actively typing means the registration went dead. */
-  last_input_ms_ago: number | null;
-  input_count: number;
-  reregistrations: number;
-  restarts: number;
-  /** Times the external watchdog rebuilt a dead listener thread or a
-   * registration that no longer pointed at the listener. */
-  rebuilds: number;
-  last_rebuild_reason: string | null;
-  last_reregister_ms_ago: number | null;
-  last_reregister_reason: string | null;
-  last_error: string | null;
-  /** An elevated app is in the foreground, so Windows withholds every key
-   * from workhub (UIPI) — not something the listener can fix. */
-  elevated_foreground: boolean;
-}
 
 /** Per-file comparison state between the shipped vault template and the
  * configured vault, from `check_vault_template` (T-0061). */
-export type TemplateFileState = "added" | "updatable" | "conflict" | "up_to_date";
-
-export interface TemplateDiffFile {
-  path: string;
-  state: TemplateFileState;
-}
 
 /** One file the template stopped shipping whose vault copy is still there and
  * still identical to what it shipped, so removing it loses nothing (T-0274).
  * Kept separate from `files` because removing is the opposite operation from
  * applying content, and is never done automatically. */
-export interface TemplateRemoval {
-  path: string;
-}
 
-export interface TemplateDiff {
-  files: TemplateDiffFile[];
-  removed: TemplateRemoval[];
-}
-
-export interface BranchList {
-  local: string[];
-  remote: string[];
-  current: string;
-}
-
-export interface CommitRef {
-  name: string;
-  kind: "branch" | "remote" | "tag" | "head";
-  is_head: boolean;
-}
-
-export interface CommitEntry {
-  hash: string;
-  parents: string[];
-  author: string;
-  date: number;
-  refs: CommitRef[];
-  subject: string;
-}
-
-export interface CommitFileChange {
-  path: string;
-  /** Original path for renames/copies. */
-  old_path: string | null;
-  /** Single-letter status: "A" | "M" | "D" | "R" | "C" | "T" | "U" (untracked). */
-  status: string;
-  /** Added/removed line counts; null for binary files. */
-  additions: number | null;
-  deletions: number | null;
-}
-
-export interface GitLog {
-  commits: CommitEntry[];
-  head: string;
-  current_branch: string;
-  uncommitted: number;
-  has_more: boolean;
+export interface WindowRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export type TaskStatus = "inbox" | "todo" | "doing" | "review" | "done";
@@ -896,48 +660,6 @@ export interface Task {
  * `src-tauri/src/notices.rs` for why one fires on the vault's shape rather
  * than on the version it was introduced in.
  */
-export interface Notice {
-  id: string;
-  /** The release that introduced the change. Shown, never used to gate. */
-  since: string;
-  /** `breaking` keeps coming back until marked read; anything else dismisses. */
-  severity: "breaking" | "info";
-  title: string;
-  /** One line, for the banner. */
-  summary: string;
-  /** Markdown, for the detail dialog. */
-  body: string;
-  /** Plugin name -> minimum version needed before the action can be carried out. */
-  requires: { plugin: Record<string, string> };
-  action: NoticeAction;
-}
-
-export interface NoticeAction {
-  title: string;
-  /** Markdown, written into the filed task's `## Description`. */
-  body: string;
-  /** Vault project slug the task is filed under; empty for none. */
-  project: string;
-}
-
-export interface CreateTaskInput {
-  title: string;
-  status?: TaskStatus;
-  assignee?: TaskAssignee;
-  project?: string;
-  backlog?: string;
-  priority?: TaskPriority;
-  model?: string;
-  confirm?: boolean;
-  worktree?: boolean;
-  blocked?: boolean;
-  blockedNote?: string;
-  blockedSince?: string;
-  dependsOn?: string[];
-  due?: string;
-  tags?: string[];
-  body?: string;
-}
 
 export interface UpdateTaskInput {
   id: string;
@@ -962,163 +684,4 @@ export interface UpdateTaskInput {
   /** Replaces the whole list; empty clears it. A loop is refused by the backend. */
   dependsOn?: string[];
   body?: string;
-}
-
-export type GraphOp =
-  | { kind: "checkout"; branch: string }
-  | { kind: "checkout_commit"; hash: string }
-  | { kind: "discard_changes"; include_untracked: boolean }
-  | { kind: "create_branch"; name: string; hash: string; checkout: boolean }
-  | { kind: "delete_branch"; name: string; force: boolean }
-  | { kind: "merge"; branch: string }
-  | { kind: "rebase"; branch: string }
-  | { kind: "push" }
-  | { kind: "pull" }
-  | { kind: "fetch" }
-  | { kind: "reset"; hash: string; mode: "soft" | "mixed" | "hard" }
-  | { kind: "cherry_pick"; hash: string }
-  | { kind: "create_tag"; name: string; hash: string }
-  | { kind: "delete_tag"; name: string };
-
-// ---- persona plugin (Persona tab) ----
-
-export interface PersonaLevel {
-  /** `light` | `normal` | `heavy` */
-  id: string;
-  /** Display label from the character file (`level_normal: 明快`). */
-  label: string;
-  /** Prose of the matching `## レベル: <label>` section; empty when absent. */
-  body: string;
-}
-
-export interface PersonaSection {
-  heading: string;
-  body: string;
-}
-
-export interface PersonaCharacter {
-  id: string;
-  name: string;
-  source: string;
-  statusline: string;
-  /** `user` for a hand-made character, `bundled` for one shipped by the plugin. */
-  origin: "user" | "bundled";
-  file: string;
-  /** Display position from the character file; the backend sorts on it. */
-  order: number;
-  levels: PersonaLevel[];
-  sections: PersonaSection[];
-}
-
-export interface PersonaState {
-  enabled: boolean;
-  character: string | null;
-  level: string;
-  /** True while `PERSONA_DEFAULT` is set, which makes any write ineffective. */
-  env_override: boolean;
-  config_path: string;
-}
-
-// ---- workhub marketplace plugins (Plugins tab) ----
-
-/** Where a plugin is installed: `either` means both scopes are legitimate. */
-export type PluginScope = "project" | "user" | "either";
-
-/**
- * How much the harness needs a plugin, decided by what breaks without it:
- * `required` — an app feature or an agent launch stops working;
- * `recommended` — nothing breaks, but the harness is noticeably worse;
- * `optional` — a matter of taste or tech stack.
- */
-export type PluginTier = "required" | "recommended" | "optional";
-
-export interface PluginInstall {
-  /** `user` | `project` | `local` | `managed` */
-  scope: string;
-  version: string;
-  /** Project this install belongs to; empty for a user-scope install. */
-  project_path: string;
-  /** Where Claude Code unpacked this install — the plugin's actual contents. */
-  install_path: string;
-}
-
-/** One skill, agent or command a plugin ships — all three are Markdown + frontmatter. */
-export interface PluginEntry {
-  /** `name` from the frontmatter, or the file/folder name when it says nothing. */
-  name: string;
-  description: string;
-  /** An agent's `model`; empty for skills and commands. */
-  model: string;
-  path: string;
-}
-
-/** The hooks one event has registered, in the order `hooks.json` lists them. */
-export interface PluginHookEvent {
-  event: string;
-  /** Each command as written — `${CLAUDE_PLUGIN_ROOT}` and all. */
-  commands: string[];
-}
-
-/** What a plugin is made of, read from the version that is actually installed. */
-export interface PluginDetails {
-  name: string;
-  version: string;
-  description: string;
-  author: string;
-  /** Root the contents were read from; empty when nothing is installed. */
-  install_path: string;
-  /** False when there is no install to read — enabled but not fetched yet. */
-  installed: boolean;
-  skills: PluginEntry[];
-  agents: PluginEntry[];
-  commands: PluginEntry[];
-  hooks: PluginHookEvent[];
-}
-
-/** One registered marketplace, and what the app could read of it. */
-export interface MarketplaceInfo {
-  name: string;
-  clone_path: string;
-  clone_found: boolean;
-  /** True only for a marketplace shipping catalog.json — workhub's own.
-   * Without it nothing can be called required, missing or recommended. */
-  catalog_found: boolean;
-  /** ISO-8601 timestamp of the last refresh; empty when unknown. */
-  marketplace_updated: string;
-}
-
-export interface PluginRow {
-  name: string;
-  /** Marketplace this row belongs to — the second half of `<name>@<market>`. */
-  marketplace: string;
-  /** False for a plugin installed or enabled but absent from catalog.json. */
-  in_catalog: boolean;
-  /** Empty for an uncatalogued row. */
-  tier: PluginTier | "";
-  /** Empty when the catalog does not say (an uncatalogued row). */
-  scope: PluginScope | "";
-  summary: string;
-  /** From the marketplace clone's plugin.json; empty when unknown. */
-  latest_version: string;
-  installs: PluginInstall[];
-  enabled_project: boolean;
-  enabled_user: boolean;
-}
-
-export interface PluginsState {
-  /** The marketplace the tab is about — the one with the catalog. */
-  marketplace: string;
-  /** Every registered marketplace, `marketplace` first and the rest by name. */
-  marketplaces: MarketplaceInfo[];
-  /** Vault `.claude/settings.json`; empty when no vault is configured. */
-  project_settings_path: string;
-  user_settings_path: string;
-  rows: PluginRow[];
-}
-
-/** One `claude plugin …` run, shown verbatim so nothing is paraphrased away. */
-export interface PluginCommandResult {
-  command: string;
-  ok: boolean;
-  output: string;
 }

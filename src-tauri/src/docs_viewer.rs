@@ -55,8 +55,8 @@ pub fn open(app: &AppHandle, payload: serde_json::Value) -> Result<(), String> {
         .get("title")
         .and_then(|t| t.as_str())
         .filter(|t| !t.trim().is_empty())
-        .map(|t| format!("{t} — workhub"))
-        .unwrap_or_else(|| "workhub — docs".into());
+        .map(|t| format!("{t} — shared-docs-viewer"))
+        .unwrap_or_else(|| "shared-docs-viewer".into());
     state
         .payloads
         .lock()

@@ -20,21 +20,21 @@ describe("translate", () => {
 
 describe("translate interpolation", () => {
   it("fills a placeholder from vars", () => {
-    expect(translate("en", "task.footer.summary", { total: 3, shown: 2 })).toBe(
-      "3 tasks · 2 shown",
-    );
+    expect(
+      translate("en", "banner.update.available", { tag: "v1", version: "0" }),
+    ).toBe("New version v1 is available (current v0)");
   });
 
   it("leaves a placeholder with no matching var untouched", () => {
-    expect(translate("en", "task.footer.summary", { total: 3 })).toBe(
-      "3 tasks · {shown} shown",
+    expect(translate("en", "banner.update.available", { tag: "v1" })).toBe(
+      "New version v1 is available (current v{version})",
     );
   });
 
   it("interpolates the Japanese text the same way", () => {
-    expect(translate("ja", "task.footer.summary", { total: 3, shown: 2 })).toBe(
-      "3件のタスク · 2件表示中",
-    );
+    expect(
+      translate("ja", "banner.update.available", { tag: "v1", version: "0" }),
+    ).toBe("新しいバージョン v1 が利用できます（現在 v0）");
   });
 });
 

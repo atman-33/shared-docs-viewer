@@ -539,7 +539,8 @@ export function DocsPreview({
           // A diagram note reads through the Projects panes' editor host
           // (T-1000, editable in the viewer in T-1001): the same real editor,
           // with a copy-prompt button for the agent and manual editing by
-          // hand. There is no in-app AI runner — that stays in workhub.
+          // hand. There is no in-app AI runner — the copy button hands a
+          // prompt to an agent session you run yourself.
           // The pop-out viewer window (`standalone`) stays read-only: two
           // writers on one note invite a conflict. Keyed by the refresh as
           // well, so the toolbar's refresh re-reads the note even when no

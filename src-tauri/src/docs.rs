@@ -965,7 +965,7 @@ mod tests {
     impl TempTree {
         fn new(tag: &str) -> Self {
             let dir = std::env::temp_dir().join(format!(
-                "workhub-docs-{tag}-{}-{:?}",
+                "viewer-docs-{tag}-{}-{:?}",
                 std::process::id(),
                 std::thread::current().id()
             ));

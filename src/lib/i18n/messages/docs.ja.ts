@@ -16,7 +16,7 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.entry.deleteDiagram": "図解をごみ箱に移動",
   "docs.entry.copyPath": "パスをコピー",
   "docs.entry.copyPaths": "{count} 件のパスをコピー",
-  "docs.entry.opensOutsideHint": "{name} — workhub の外で開きます",
+  "docs.entry.opensOutsideHint": "{name} \u2014 \u4ed6\u306e\u30a2\u30d7\u30ea\u3067\u958b\u304d\u307e\u3059",
 
   "docs.view.filterPlaceholder": "名前でフィルター",
   "docs.view.collapseAllHint": "すべてのフォルダを折りたたむ",
@@ -32,8 +32,7 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.view.openedByTail": "末尾一致で開きました: {path}",
   "docs.view.matchesFoundByName": "この名前のファイルが {count} 件見つかりました — 1つ選んでください。",
   "docs.view.matchesFoundByTail": "このパスの末尾に一致するファイルが {count} 件あります — 1つ選んでください。",
-  "docs.view.noRootsMessage":
-    "フォルダがまだ登録されていません。チームが Markdown を置いている共有フォルダ（例えば Google Drive のネットワークドライブ）を追加すると、Obsidian の vault として開かずにここでドキュメントを読めます。フォルダには一切書き込まれません。",
+  "docs.view.noRootsMessage": "\u30d5\u30a9\u30eb\u30c0\u304c\u307e\u3060\u767b\u9332\u3055\u308c\u3066\u3044\u307e\u305b\u3093\u3002\u30c1\u30fc\u30e0\u306e Markdown \u3092\u7f6e\u3044\u3066\u3044\u308b\u5171\u6709\u30d5\u30a9\u30eb\u30c0\uff08\u305f\u3068\u3048\u3070 Google Drive \u306e\u30cd\u30c3\u30c8\u30ef\u30fc\u30af\u30c9\u30e9\u30a4\u30d6\uff09\u3092\u8ffd\u52a0\u3059\u308b\u3068\u3001\u3053\u3053\u3067\u30c9\u30ad\u30e5\u30e1\u30f3\u30c8\u3092\u8aad\u3081\u307e\u3059\u3002\u66f8\u304d\u8fbc\u307e\u308c\u308b\u306e\u306f\u7de8\u96c6\u3057\u305f\u56f3\u89e3\u30e1\u30e2\u3060\u3051\u3067\u3059\u3002",
   "docs.view.rootUnreachable":
     "{path} はこの PC から到達できません。ドライブがマウントされているか確認し、場所が変わっている場合は上の鉛筆ボタンでパスを修正してください。",
   "docs.view.tryAgain": "再試行",
@@ -84,7 +83,7 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.preview.showFileHint": "このファイルをエクスプローラーで表示",
   "docs.preview.reading": "読み込み中…",
   "docs.preview.empty": "このドキュメントは空です。",
-  "docs.preview.wikiNotFound": "[[{target}]] に一致するファイルは vault・このフォルダ内にありません。",
+  "docs.preview.wikiNotFound": "[[{target}]] \u306b\u4e00\u81f4\u3059\u308b\u30d5\u30a1\u30a4\u30eb\u306f\u3053\u306e\u30d5\u30a9\u30eb\u30c0\u306b\u3042\u308a\u307e\u305b\u3093\u3002",
   "docs.preview.wikiAmbiguous":
     "[[{target}]] に一致するファイルが {count} 件あるため、プレビューでは開けません。",
 
@@ -105,8 +104,7 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
     "「{name}」がリストから削除されます。フォルダ自体とその中身はそのまま残ります。",
 
   "docs.rootDialog.title": "フォルダを編集",
-  "docs.rootDialog.description":
-    "このフォルダは vault に記録されるので、vault を複製した別の PC でも同じフォルダが使えます。",
+  "docs.rootDialog.description": "\u30d5\u30a9\u30eb\u30c0\u306e\u4e00\u89a7\u306f\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58\u3055\u308c\u308b\u305f\u3081\u3001\u5225\u306e PC \u306b\u306f\u5f15\u304d\u7d99\u304c\u308c\u307e\u305b\u3093\u3002",
   "docs.rootDialog.name": "名前",
   "docs.rootDialog.namePlaceholder": "チーム共有",
   "docs.rootDialog.nameHint": "ピッカーに表示するラベルです。空にするとパスが表示されます。",
@@ -117,7 +115,7 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.rootDialog.pickFolderDialogTitle": "フォルダを選択",
 
   "docs.settings.title": "Docs 設定",
-  "docs.settings.description": "フォルダの一覧と同様に vault に記録されます。",
+  "docs.settings.description": "\u30d5\u30a9\u30eb\u30c0\u306e\u4e00\u89a7\u3068\u540c\u69d8\u306b\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002",
   "docs.settings.listPaneLabel": "ツリーの横にファイル一覧を表示",
   "docs.settings.listPaneDescription":
     "Obsidian の Notebook Navigator と同じようにサイドバーを分割します: 左にフォルダ、右に選んだフォルダのファイル。オフにすると、サイドバーは1つのツリーにまとまります。",
@@ -151,5 +149,5 @@ export const docsJa: Partial<Record<MessageKey, string>> = {
   "docs.annotation.placeholder": "ここをどう変更しますか？",
 
   "docs.viewer.nothingToShow": "表示するものがありません — このウィンドウは開かれた対象を失いました。",
-  "docs.viewer.windowTitleFallback": "workhub — ドキュメント",
+  "docs.viewer.windowTitleFallback": "shared-docs-viewer",
 };

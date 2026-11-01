@@ -9,7 +9,7 @@ license = "MIT"
 # targets) makes the debug DLL exceed the PE export-ordinal limit on
 # windows-gnu ("export ordinal too large").
 [lib]
-name = "workhub_lib"
+name = "shared_docs_viewer_lib"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -27,15 +27,9 @@ ureq = { version = "2", features = ["json"] }
 # PlantUML's URL encoding is raw deflate (Docs tab, T-0279). Already in the
 # tree through ureq and png, so naming it costs no extra build.
 flate2 = "1"
-# vault task-file watching (debounced manually in tasks.rs; kept to the plain
-# channel API — no extra debouncer crate needed).
-notify = "6"
 # task deletion goes to the OS recycle bin (restorable), never a hard delete
 trash = "5"
 tauri-plugin-notification = "2.3.3"
-# quick capture: global hotkey (RegisterHotKey-based; distinct from the ink
-# Raw Input listener, which observes key state rather than registering keys)
-tauri-plugin-global-shortcut = "2"
 # single-instance guard: a second launch focuses the existing main window and
 # exits instead of accumulating windowless/zombie processes (see lib.rs)
 tauri-plugin-single-instance = "2"
@@ -43,35 +37,9 @@ tauri-plugin-single-instance = "2"
 # The plugin writes `current_exe()` every time it is enabled, which is what
 # lets startup re-register a moved or self-updated exe (see lib.rs).
 tauri-plugin-autostart = "2"
-# percent-encoding for obsidian:// open URIs (task file jump-to-Obsidian)
-percent-encoding = "2"
-portable-pty = "0.9"
-# voice input: local speech-to-text via whisper.cpp (no LLM, no cloud).
-# The vulkan feature builds ggml's Vulkan backend for GPU-accelerated
-# decoding (whisper.cpp falls back to CPU at runtime when no usable Vulkan
-# device exists). Building requires the Vulkan SDK (VULKAN_SDK env var) —
-# see .claude/rules/voice-input-build.md.
-whisper-rs = { version = "0.14", features = ["vulkan"] }
-# voice input: native microphone capture (focus-independent, no webview mic)
-cpal = "0.15"
-# voice input: verifies downloaded ggml model checksums. Upstream whisper.cpp
-# publishes SHA-1 checksums for its ggml models (40 hex chars), not SHA-256 —
-# this crate matches that, see src-tauri/src/stt.rs.
-sha1 = "0.10"
-# vault template sync: hashes embedded template files vs. vault copies to
-# detect drift (see src-tauri/src/tasks.rs, "template manifest" section).
-sha2 = "0.10"
 # embeds vault-template/ into the binary so a packaged build has no dev-machine
 # path dependency for the template source (see src-tauri/src/tasks.rs).
 include_dir = "0.7"
-# vault template sync: renders the vault-vs-template unified diff shown in the
-# template update dialog before an overwrite (see src-tauri/src/tasks.rs).
-similar = "2"
-# ink captures: PNG encode/decode. Encoding turns the BitBlt screen grab into
-# the PNG the overlay draws on; decoding turns a saved capture back into the
-# raw RGBA the clipboard and the thumbnail list need. Default features are off
-# because PNG is the only format involved.
-image = { version = "0.25", default-features = false, features = ["png"] }
 
 # ink overlay: Raw Input keyboard listener for the double-Alt temporary draw mode
 [target.'cfg(windows)'.dependencies]
@@ -88,7 +56,7 @@ windows = { version = "0.61", features = [
     # re-register (see src-tauri/src/rawkey.rs).
     "Win32_System_RemoteDesktop",
     # voice input: clipboard save/restore around the paste-injection (the
-    # focused app, not workhub, owns the clipboard target — Win32 clipboard
+    # focused app, not the viewer, owns the clipboard target — Win32 clipboard
     # APIs work regardless of which window has focus).
     "Win32_System_DataExchange",
     "Win32_System_Ole",
@@ -114,12 +82,6 @@ windows = { version = "0.61", features = [
     "Win32_Storage_FileSystem",
     "Win32_System_WindowsProgramming",
 ] }
-
-# whisper-rs-sys 0.13.1 passes the MSVC-only /utf-8 flag to g++ on every
-# Windows target, which breaks the windows-gnu build. Vendored copy carries a
-# one-line fix gating the flag on *-msvc (see vendor/whisper-rs-sys/build.rs).
-[patch.crates-io]
-whisper-rs-sys = { path = "vendor/whisper-rs-sys" }
 
 [profile.release]
 opt-level = 2

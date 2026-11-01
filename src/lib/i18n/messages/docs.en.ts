@@ -14,7 +14,7 @@ export const docsEn = {
   "docs.entry.deleteDiagram": "Move diagram to trash",
   "docs.entry.copyPath": "Copy path",
   "docs.entry.copyPaths": "Copy {count} paths",
-  "docs.entry.opensOutsideHint": "{name} — opens outside workhub",
+  "docs.entry.opensOutsideHint": "{name} \u2014 opens in another app",
 
   "docs.view.filterPlaceholder": "Filter by name",
   "docs.view.collapseAllHint": "Collapse every folder",
@@ -30,8 +30,7 @@ export const docsEn = {
   "docs.view.openedByTail": "Opened by tail match: {path}",
   "docs.view.matchesFoundByName": "{count} files with this name were found — pick one.",
   "docs.view.matchesFoundByTail": "{count} files match this tail — pick one.",
-  "docs.view.noRootsMessage":
-    "No folders registered yet. Add the shared folder your team keeps its Markdown in — a Google Drive network drive, for instance — and its documents can be read here without opening it as an Obsidian vault. Nothing is ever written into the folder.",
+  "docs.view.noRootsMessage": "No folders registered yet. Add the shared folder your team keeps its Markdown in \u2014 a Google Drive network drive, for instance \u2014 and its documents can be read here. Only the diagram notes you edit are written back.",
   "docs.view.rootUnreachable":
     "{path} is not reachable on this PC. Check that the drive is mounted and, if it lives somewhere else now, correct the path with the pencil button above.",
   "docs.view.tryAgain": "Try again",
@@ -82,7 +81,7 @@ export const docsEn = {
   "docs.preview.showFileHint": "Show this file in Explorer",
   "docs.preview.reading": "Reading…",
   "docs.preview.empty": "This document is empty.",
-  "docs.preview.wikiNotFound": "[[{target}]] matches no file under the vault or this folder.",
+  "docs.preview.wikiNotFound": "[[{target}]] matches no file in this folder.",
   "docs.preview.wikiAmbiguous":
     "[[{target}]] matches {count} files, so the preview cannot pick one.",
 
@@ -103,8 +102,7 @@ export const docsEn = {
     '"{name}" is removed from the list. The folder itself and everything in it are left exactly as they are.',
 
   "docs.rootDialog.title": "Edit folder",
-  "docs.rootDialog.description":
-    "The folder is recorded in the vault, so another PC that clones it gets this folder too.",
+  "docs.rootDialog.description": "The folder list is stored on this machine, so it does not follow you to another PC.",
   "docs.rootDialog.name": "Name",
   "docs.rootDialog.namePlaceholder": "Team share",
   "docs.rootDialog.nameHint": "A label for the picker. Leave it empty to show the path instead.",
@@ -115,7 +113,7 @@ export const docsEn = {
   "docs.rootDialog.pickFolderDialogTitle": "Pick the folder",
 
   "docs.settings.title": "Docs settings",
-  "docs.settings.description": "Recorded in the vault, like the folder list.",
+  "docs.settings.description": "Stored on this machine, like the folder list.",
   "docs.settings.listPaneLabel": "File list beside the tree",
   "docs.settings.listPaneDescription":
     "Splits the sidebar the way Obsidian's Notebook Navigator does: folders on the left, the files of the folder you pick on the right. Off, the sidebar is one tree holding both.",
@@ -149,5 +147,5 @@ export const docsEn = {
   "docs.annotation.placeholder": "What should change here?",
 
   "docs.viewer.nothingToShow": "Nothing to show — this window lost what it was opened for.",
-  "docs.viewer.windowTitleFallback": "workhub — docs",
+  "docs.viewer.windowTitleFallback": "shared-docs-viewer",
 } as const;

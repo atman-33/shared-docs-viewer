@@ -12,10 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # The plugin-versions check diffs against the PR's base branch, and
-          # the default shallow clone fetches no branch but the PR's own —
-          # `origin/main` does not exist, so the check crashed instead of
-          # running. Full history also gives `base...HEAD` a merge base.
+          # Full history so `base...HEAD` diffs have a merge base.
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -27,15 +24,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      # whisper.cpp's Vulkan backend (whisper-rs `vulkan` feature) needs the
-      # Vulkan SDK (headers, vulkan-1 import lib, glslc) at build time.
-      - name: Install Vulkan SDK
-        shell: pwsh
-        run: |
-          $ver = "1.4.350.0"
-          curl.exe -sSL -o vulkan-sdk.exe "https://sdk.lunarg.com/sdk/download/$ver/windows/vulkansdk-windows-X64-$ver.exe"
-          Start-Process -Wait .\vulkan-sdk.exe -ArgumentList "--accept-licenses","--default-answer","--confirm-command","install"
-          "VULKAN_SDK=C:\VulkanSDK\$ver" >> $env:GITHUB_ENV
       - name: Install frontend dependencies
         run: npm ci
       - name: Format check
@@ -44,16 +32,6 @@ jobs:
       - name: Clippy
         working-directory: src-tauri
         run: cargo clippy -- -D warnings
-      # A plugin cache is keyed by version, so a plugin change that keeps the
-      # version never reaches an installed copy. Prose has not been enough:
-      # see scripts/check-plugin-versions.mjs.
-      - name: Plugin versions
-        if: github.event_name == 'pull_request'
-        run: node scripts/check-plugin-versions.mjs origin/${{ github.base_ref }}
-      # The template's CLAUDE.md loads in every session of every vault; see
-      # scripts/check-claude-md-budget.mjs.
-      - name: CLAUDE.md budget
-        run: node scripts/check-claude-md-budget.mjs
       - name: Test (frontend)
         run: npm test
       - name: Test (backend)

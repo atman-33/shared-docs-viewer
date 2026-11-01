@@ -160,55 +160,6 @@ pub fn frontmatter_list(front: &str, key: &str) -> Vec<String> {
     out
 }
 
-/// Rewrites `key` as a block list, carrying every other line through
-/// byte-for-byte. The key is appended when it was missing, and dropped
-/// entirely when `items` is empty.
-///
-/// Separate from `rewrite_frontmatter` because a list key owns the indented
-/// lines beneath it: replacing only the `key:` line would leave the previous
-/// entries behind as orphans of a key that no longer claims them.
-pub fn rewrite_frontmatter_list(front: &str, key: &str, items: &[String]) -> String {
-    let mut out = String::new();
-    let mut written = false;
-    let mut skipping = false;
-    for line in front.lines() {
-        if skipping {
-            if is_list_item(line).is_some() {
-                continue;
-            }
-            skipping = false;
-        }
-        let this = line.find(':').map(|i| line[..i].trim()).unwrap_or_default();
-        if this == key {
-            skipping = true;
-            write_list(&mut out, key, items);
-            written = true;
-            continue;
-        }
-        out.push_str(line);
-        out.push('\n');
-    }
-    if !written {
-        write_list(&mut out, key, items);
-    }
-    out
-}
-
-fn write_list(out: &mut String, key: &str, items: &[String]) {
-    let items: Vec<&str> = items
-        .iter()
-        .map(|i| i.trim())
-        .filter(|i| !i.is_empty())
-        .collect();
-    if items.is_empty() {
-        return;
-    }
-    out.push_str(&format!("{key}:\n"));
-    for item in items {
-        out.push_str(&format!("  - {item}\n"));
-    }
-}
-
 /// Drops `key` and any block-list lines beneath it. Used to retire a key the
 /// app no longer writes, so a note it rewrites does not keep both spellings.
 pub fn remove_frontmatter_key(front: &str, key: &str) -> String {
@@ -308,7 +259,7 @@ pub fn archive_projects_dir(vault: &Path) -> PathBuf {
 /// the identity used everywhere a project is named: a task's `project:`, a
 /// backlog item's `project:`, and the `<project-slug>` scaffold placeholder.
 /// A number is a 4-digit zero-padded prefix followed by a hyphen
-/// (`0010-workhub`); a folder with no such prefix has slug == folder name,
+/// (`0010-demo`); a folder with no such prefix has slug == folder name,
 /// which is the same rule rather than a separate fallback (T-0278).
 pub fn parse_project_folder(name: &str) -> (Option<u32>, &str) {
     if name.len() > 5
@@ -443,41 +394,6 @@ pub fn next_project_number(vault: &Path) -> u32 {
     (highest / 10) * 10 + 10
 }
 
-/// Project slugs the vault has, i.e. the stripped slugs of the folders under
-/// `projects/` (T-0278: a folder may carry a `NNNN-` sort prefix, which is
-/// not part of the identity).
-///
-/// A picker cannot derive this from existing notes: a vault with no notes yet
-/// would offer no projects, and "create a note" needs a project first — which
-/// is a deadlock, not an empty state.
-///
-/// Folders starting with `_` (the zone index and any scratch area) are not
-/// projects and are skipped. Two folders answering to the same slug collapse
-/// to one entry here — a picker has nothing useful to do with a duplicate,
-/// and the Projects tab is where that inconsistency is reported.
-pub fn list_projects(vault: &Path) -> Result<Vec<String>, String> {
-    let root = projects_dir(vault);
-    if !root.is_dir() {
-        return Ok(Vec::new());
-    }
-    let mut out = Vec::new();
-    for entry in fs::read_dir(&root).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        if !entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if name.starts_with('_') || name.starts_with('.') {
-            continue;
-        }
-        let (_, slug) = parse_project_folder(&name);
-        out.push(slug.to_string());
-    }
-    out.sort();
-    out.dedup();
-    Ok(out)
-}
-
 /// Fills the project scaffold's placeholders for one project.
 ///
 /// `<Project name>` becomes `name` (the slug stands in when it is blank),
@@ -567,7 +483,7 @@ pub fn next_project_folder(vault: &Path, slug: &str) -> Result<String, String> {
 /// The folder gets a `NNNN-` sort prefix the caller never chooses (T-0278):
 /// `next_project_number` allocates it, so two agents creating a project at
 /// the same time still both get a folder, and a slug that already looks
-/// numbered (`0010-workhub`) is refused rather than double-prefixed.
+/// numbered (`0010-demo`) is refused rather than double-prefixed.
 pub fn create_project(vault: &Path, slug: &str, name: &str) -> Result<(), String> {
     let slug = slug.trim();
     check_new_project_slug(vault, slug)?;
@@ -772,34 +688,6 @@ pub fn snapshot_path(vault: &Path, dir: &str, target: &Path) -> PathBuf {
     ai_state_dir(vault).join(dir).join(format!("{rel}.bak"))
 }
 
-pub fn save_snapshot(vault: &Path, dir: &str, target: &Path) -> Result<(), String> {
-    let content = fs::read_to_string(target).map_err(|e| e.to_string())?;
-    let path = snapshot_path(vault, dir, target);
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    fs::write(&path, content).map_err(|e| e.to_string())
-}
-
-/// Restores a note from its snapshot and consumes it, so "undo" is exactly one
-/// generation deep and cannot be pressed twice against a snapshot that no
-/// longer describes a state the user wants back.
-///
-/// No mtime check is applied: the whole point is to discard whatever an agent
-/// just wrote.
-pub fn restore_snapshot(vault: &Path, dir: &str, target: &Path, kind: &str) -> Result<(), String> {
-    let path = snapshot_path(vault, dir, target);
-    let content = fs::read_to_string(&path)
-        .map_err(|_| format!("no snapshot is available for this {kind}"))?;
-    fs::write(target, &content).map_err(|e| e.to_string())?;
-    let _ = fs::remove_file(&path);
-    Ok(())
-}
-
-pub fn has_snapshot(vault: &Path, dir: &str, target: &Path) -> bool {
-    snapshot_path(vault, dir, target).exists()
-}
-
 /// Moves a note's snapshot alongside a renamed note. A snapshot left behind at
 /// the old key could never be found again, so the undo would silently vanish.
 pub fn move_snapshot(vault: &Path, dir: &str, from: &Path, to: &Path) -> Result<(), String> {
@@ -865,7 +753,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("workhub-projnum-{name}-{nanos}"));
+        let dir = std::env::temp_dir().join(format!("viewer-projnum-{name}-{nanos}"));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(dir.join("projects")).unwrap();
         dir
@@ -873,34 +761,31 @@ mod tests {
 
     #[test]
     fn parse_project_folder_strips_only_a_well_formed_number_prefix() {
-        assert_eq!(parse_project_folder("0010-workhub"), (Some(10), "workhub"));
-        assert_eq!(parse_project_folder("workhub"), (None, "workhub"));
+        assert_eq!(parse_project_folder("0010-demo"), (Some(10), "demo"));
+        assert_eq!(parse_project_folder("demo"), (None, "demo"));
         // Only the first `NNNN-` is stripped, so a slug that itself looks
         // numbered keeps its own prefix.
         assert_eq!(
-            parse_project_folder("0010-0020-workhub"),
-            (Some(10), "0020-workhub")
+            parse_project_folder("0010-0020-demo"),
+            (Some(10), "0020-demo")
         );
         // Not exactly 4 digits followed by a hyphen: read as an unnumbered
         // folder rather than guessing.
-        assert_eq!(parse_project_folder("123-workhub"), (None, "123-workhub"));
-        assert_eq!(
-            parse_project_folder("00010-workhub"),
-            (None, "00010-workhub")
-        );
-        assert_eq!(parse_project_folder("0010workhub"), (None, "0010workhub"));
+        assert_eq!(parse_project_folder("123-demo"), (None, "123-demo"));
+        assert_eq!(parse_project_folder("00010-demo"), (None, "00010-demo"));
+        assert_eq!(parse_project_folder("0010demo"), (None, "0010demo"));
     }
 
     #[test]
     fn resolve_project_dir_finds_a_numbered_and_an_unnumbered_folder() {
         let vault = temp_project_vault("resolve");
-        fs::create_dir_all(vault.join("projects").join("0010-workhub")).unwrap();
+        fs::create_dir_all(vault.join("projects").join("0010-demo")).unwrap();
         fs::create_dir_all(vault.join("projects").join("legacy")).unwrap();
 
         let root = projects_dir(&vault);
         assert_eq!(
-            resolve_project_dir(&root, "workhub").unwrap(),
-            Some(vault.join("projects").join("0010-workhub"))
+            resolve_project_dir(&root, "demo").unwrap(),
+            Some(vault.join("projects").join("0010-demo"))
         );
         assert_eq!(
             resolve_project_dir(&root, "legacy").unwrap(),
@@ -912,11 +797,11 @@ mod tests {
     #[test]
     fn resolve_project_dir_errs_on_a_duplicate_slug() {
         let vault = temp_project_vault("duplicate");
-        fs::create_dir_all(vault.join("projects").join("0010-workhub")).unwrap();
-        fs::create_dir_all(vault.join("projects").join("0020-workhub")).unwrap();
+        fs::create_dir_all(vault.join("projects").join("0010-demo")).unwrap();
+        fs::create_dir_all(vault.join("projects").join("0020-demo")).unwrap();
 
-        let err = resolve_project_dir(&projects_dir(&vault), "workhub").unwrap_err();
-        assert!(err.contains("workhub"), "error: {err}");
+        let err = resolve_project_dir(&projects_dir(&vault), "demo").unwrap_err();
+        assert!(err.contains("demo"), "error: {err}");
     }
 
     #[test]
@@ -944,7 +829,10 @@ mod tests {
         assert_eq!(next_project_folder(&vault, "demo").unwrap(), "0010-demo");
         create_project(&vault, "demo", "Demo").unwrap();
         assert!(vault.join("projects").join("0010-demo").is_dir());
-        assert_eq!(list_projects(&vault).unwrap(), vec!["demo"]);
+        assert_eq!(
+            resolve_project_dir(&projects_dir(&vault), "demo").unwrap(),
+            Some(vault.join("projects").join("0010-demo"))
+        );
 
         // The next project continues the sequence in tens.
         assert_eq!(
@@ -958,9 +846,9 @@ mod tests {
     #[test]
     fn create_project_rejects_a_slug_that_already_looks_numbered() {
         let vault = temp_project_vault("numbered-slug");
-        let err = create_project(&vault, "0010-workhub", "x").unwrap_err();
+        let err = create_project(&vault, "0010-demo", "x").unwrap_err();
         assert!(err.contains("automatically"), "error: {err}");
-        assert!(next_project_folder(&vault, "0010-workhub").is_err());
+        assert!(next_project_folder(&vault, "0010-demo").is_err());
     }
 
     #[test]
@@ -980,7 +868,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("workhub-aistate-{name}-{nanos}"));
+        let dir = std::env::temp_dir().join(format!("viewer-aistate-{name}-{nanos}"));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         dir

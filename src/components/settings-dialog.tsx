@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/select";
 import { DiagnosticLogPanel } from "@/components/diagnostic-log-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { VaultScopedBadge } from "@/components/vault-scoped-badge";
 import { LOCALES, useT } from "@/lib/i18n";
 import {
   isThemePreference,
@@ -247,7 +246,6 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
               <div className="space-y-2 rounded-md border p-3">
                 <p className="flex items-center gap-2 text-sm font-medium">
                   {t("settings.general.language.title")}
-                  <VaultScopedBadge />
                 </p>
                 <Select
                   value={draft.ui_locale}
@@ -370,7 +368,6 @@ export function SettingsDialog({ open, settings, onClose, onSave }: Props) {
               <div className="space-y-1.5 pt-1">
                 <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   {t("settings.agents.language.label")}
-                  <VaultScopedBadge />
                 </label>
                 <p className="text-[10px] leading-tight text-muted-foreground/70">
                   {t("settings.agents.language.description")}

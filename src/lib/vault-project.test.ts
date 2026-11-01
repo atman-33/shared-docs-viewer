@@ -311,12 +311,12 @@ describe("unknownProjects", () => {
 describe("linkedRepos", () => {
   const repos = [
     { path: "C:/repos/multi-agent-ff15-vscode", name: "multi-agent-ff15-vscode" },
-    { path: "C:/repos/workhub", name: "workhub" },
+    { path: "C:/repos/acme", name: "acme" },
   ];
 
   it("matches a stored path regardless of separators and trailing slash", () => {
-    const p = project({ repos: ["C:\\repos\\workhub\\"] });
-    expect(linkedRepos(p, repos)[0].repo?.name).toBe("workhub");
+    const p = project({ repos: ["C:\\repos\\acme\\"] });
+    expect(linkedRepos(p, repos)[0].repo?.name).toBe("acme");
   });
 
   it("falls back to the repo name, which is how a hand-written link reads", () => {
@@ -325,9 +325,9 @@ describe("linkedRepos", () => {
   });
 
   it("keeps file order, so the first entry stays the project's default", () => {
-    const p = project({ repos: ["workhub", "multi-agent-ff15-vscode"] });
+    const p = project({ repos: ["acme", "multi-agent-ff15-vscode"] });
     expect(linkedRepos(p, repos).map((l) => l.repo?.name)).toEqual([
-      "workhub",
+      "acme",
       "multi-agent-ff15-vscode",
     ]);
   });
@@ -364,8 +364,8 @@ describe("projectOfNotePath", () => {
   // picker's list — and the two effects that compare them clear and reopen the
   // same note until React aborts the render (T-0284).
   it("drops a numbered folder's sort prefix", () => {
-    expect(projectOfNotePath("C:/vault/projects/0010-workhub/schedules/plan.md")).toBe("workhub");
-    expect(projectOfNotePath("C:\\vault\\projects\\0010-workhub\\mindmaps\\a.md")).toBe("workhub");
+    expect(projectOfNotePath("C:/vault/projects/0010-acme/schedules/plan.md")).toBe("acme");
+    expect(projectOfNotePath("C:\\vault\\projects\\0010-acme\\mindmaps\\a.md")).toBe("acme");
   });
 });
 
@@ -373,12 +373,12 @@ describe("projectSlugOfFolder", () => {
   // The same cases as `parse_project_folder`'s Rust test, so the two copies of
   // the rule cannot drift apart.
   it("strips a well-formed 4-digit prefix and nothing else", () => {
-    expect(projectSlugOfFolder("0010-workhub")).toBe("workhub");
-    expect(projectSlugOfFolder("workhub")).toBe("workhub");
-    expect(projectSlugOfFolder("0010-0020-workhub")).toBe("0020-workhub");
-    expect(projectSlugOfFolder("123-workhub")).toBe("123-workhub");
-    expect(projectSlugOfFolder("00010-workhub")).toBe("00010-workhub");
-    expect(projectSlugOfFolder("0010workhub")).toBe("0010workhub");
+    expect(projectSlugOfFolder("0010-acme")).toBe("acme");
+    expect(projectSlugOfFolder("acme")).toBe("acme");
+    expect(projectSlugOfFolder("0010-0020-acme")).toBe("0020-acme");
+    expect(projectSlugOfFolder("123-acme")).toBe("123-acme");
+    expect(projectSlugOfFolder("00010-acme")).toBe("00010-acme");
+    expect(projectSlugOfFolder("0010acme")).toBe("0010acme");
   });
 
   it("leaves a bare prefix alone — a folder is never only its number", () => {
@@ -390,25 +390,25 @@ describe("projectSlugOfFolder", () => {
 describe("projectNumberOfFolder", () => {
   // The mirror of `projectSlugOfFolder`: whatever that strips, this returns.
   it("returns the prefix exactly where the slug rule strips one", () => {
-    expect(projectNumberOfFolder("0010-workhub")).toBe("0010");
-    expect(projectNumberOfFolder("0010-0020-workhub")).toBe("0010");
+    expect(projectNumberOfFolder("0010-acme")).toBe("0010");
+    expect(projectNumberOfFolder("0010-0020-acme")).toBe("0010");
   });
 
   it("returns nothing for a folder the slug rule leaves whole", () => {
-    expect(projectNumberOfFolder("workhub")).toBe("");
-    expect(projectNumberOfFolder("123-workhub")).toBe("");
-    expect(projectNumberOfFolder("00010-workhub")).toBe("");
-    expect(projectNumberOfFolder("0010workhub")).toBe("");
+    expect(projectNumberOfFolder("acme")).toBe("");
+    expect(projectNumberOfFolder("123-acme")).toBe("");
+    expect(projectNumberOfFolder("00010-acme")).toBe("");
+    expect(projectNumberOfFolder("0010acme")).toBe("");
     expect(projectNumberOfFolder("0010-")).toBe("");
     expect(projectNumberOfFolder("")).toBe("");
   });
 });
 
 describe("projectNumberedLabel", () => {
-  const folders = { workhub: "0010-workhub", demo: "demo" };
+  const folders = { acme: "0010-acme", demo: "demo" };
 
   it("draws the folder number beside the slug", () => {
-    expect(projectNumberedLabel("workhub", folders)).toBe("0010 workhub");
+    expect(projectNumberedLabel("acme", folders)).toBe("0010 acme");
   });
 
   it("leaves a slug whose folder has no number undecorated", () => {
@@ -611,11 +611,11 @@ describe("planProjectMove", () => {
 describe("projectOptionsOf", () => {
   it("lists slugs in folder order with their folders", () => {
     const out = projectOptionsOf([
-      project({ slug: "workhub", folder: "0020-workhub" }),
+      project({ slug: "acme", folder: "0020-acme" }),
       project({ slug: "demo", folder: "0010-demo" }),
     ]);
-    expect(out.slugs).toEqual(["demo", "workhub"]);
-    expect(out.folders).toEqual({ demo: "0010-demo", workhub: "0020-workhub" });
+    expect(out.slugs).toEqual(["demo", "acme"]);
+    expect(out.folders).toEqual({ demo: "0010-demo", acme: "0020-acme" });
   });
 
   it("collapses duplicate-slug folders to one option", () => {
@@ -629,18 +629,18 @@ describe("projectOptionsOf", () => {
 
 describe("matchesProjectFilter", () => {
   it("passes everything when the filter is empty", () => {
-    expect(matchesProjectFilter({ project: "workhub" }, "")).toBe(true);
+    expect(matchesProjectFilter({ project: "acme" }, "")).toBe(true);
     expect(matchesProjectFilter({ project: "" }, "")).toBe(true);
   });
 
   it("selects only tasks without a project for the no-project value", () => {
     expect(matchesProjectFilter({ project: "" }, NO_PROJECT_FILTER)).toBe(true);
-    expect(matchesProjectFilter({ project: "workhub" }, NO_PROJECT_FILTER)).toBe(false);
+    expect(matchesProjectFilter({ project: "acme" }, NO_PROJECT_FILTER)).toBe(false);
   });
 
   it("compares slugs exactly otherwise", () => {
-    expect(matchesProjectFilter({ project: "workhub" }, "workhub")).toBe(true);
-    expect(matchesProjectFilter({ project: "other" }, "workhub")).toBe(false);
-    expect(matchesProjectFilter({ project: "" }, "workhub")).toBe(false);
+    expect(matchesProjectFilter({ project: "acme" }, "acme")).toBe(true);
+    expect(matchesProjectFilter({ project: "other" }, "acme")).toBe(false);
+    expect(matchesProjectFilter({ project: "" }, "acme")).toBe(false);
   });
 });
