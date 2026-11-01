@@ -87,7 +87,7 @@ export function buildProjectFixPrompt(project: VaultProject, language = "en"): s
 変更する前に、vault の ".claude/rules/projects.md" を読んでください。
 指摘はこの定義を基準に出ています。
 
-workhub の Projects タブが報告した指摘:
+Projects タブが報告した指摘:
 
 ${findings}
 
@@ -128,7 +128,7 @@ Project folder: ${location}
 Read ".claude/rules/projects.md" in the vault before changing
 anything — it is the definition these findings are measured against.
 
-Findings reported by the workhub Projects tab:
+Findings reported by the Projects tab:
 
 ${findings}
 
@@ -464,7 +464,7 @@ export function projectOfNotePath(path: string): string {
  * registered repo answers to it.
  *
  * Matched on the stored path first and the repo's display name second, so a
- * link recorded by hand in Obsidian ("repos: [workhub]") works as well as one
+ * link recorded by hand in Obsidian ("repos: [acme]") works as well as one
  * made from the picker.
  */
 export function resolveRepo<T extends { path: string; name: string }>(

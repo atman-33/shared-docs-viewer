@@ -35,12 +35,12 @@ afterEach(() => {
 describe("readViewState", () => {
   it("reads the project and path stored for the view", () => {
     stubStorage({
-      "schedule.lastProject": "workhub",
-      "schedule.lastPath": "projects/workhub/schedules/plan.md",
+      "schedule.lastProject": "acme",
+      "schedule.lastPath": "projects/acme/schedules/plan.md",
     });
     expect(readViewState("schedule")).toEqual({
-      project: "workhub",
-      path: "projects/workhub/schedules/plan.md",
+      project: "acme",
+      path: "projects/acme/schedules/plan.md",
     });
   });
 
@@ -64,10 +64,10 @@ describe("readViewState", () => {
 describe("writeViewState", () => {
   it("persists a field under the view's key", () => {
     const store = stubStorage();
-    writeViewState("mindmap", "path", "projects/workhub/mindmaps/ideas.md");
-    writeViewState("mindmap", "project", "workhub");
-    expect(store.get("mindmap.lastPath")).toBe("projects/workhub/mindmaps/ideas.md");
-    expect(store.get("mindmap.lastProject")).toBe("workhub");
+    writeViewState("mindmap", "path", "projects/acme/mindmaps/ideas.md");
+    writeViewState("mindmap", "project", "acme");
+    expect(store.get("mindmap.lastPath")).toBe("projects/acme/mindmaps/ideas.md");
+    expect(store.get("mindmap.lastProject")).toBe("acme");
   });
 
   it("round-trips through readViewState", () => {

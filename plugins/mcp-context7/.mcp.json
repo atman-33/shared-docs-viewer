@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "context7": {
-      "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/context7-mcp-launcher.mjs"]
-    }
-  }
-}

@@ -33,7 +33,7 @@ describe("parseMindmap", () => {
     const doc = parseMindmap(
       note(
         [
-          "- N-001 workhub #blue",
+          "- N-001 website #blue",
           "  - N-002 tasks #green task:T-0042",
           "    - N-003 kanban ^collapsed",
           "  - N-004 schedule",
@@ -45,7 +45,7 @@ describe("parseMindmap", () => {
     expect(doc.roots).toHaveLength(1);
     const root = doc.roots[0];
     expect(root.id).toBe("N-001");
-    expect(root.title).toBe("workhub");
+    expect(root.title).toBe("website");
     expect(root.color).toBe("blue");
     expect(root.children.map((n) => n.id)).toEqual(["N-002", "N-004"]);
 
@@ -109,7 +109,7 @@ describe("serializeMindmap", () => {
   it("round-trips a note byte-for-byte apart from `updated`", () => {
     const content = note(
       [
-        "- N-001 workhub #blue",
+        "- N-001 website #blue",
         "  - N-002 tasks #green task:T-0042",
         "    detail line",
         "    - N-003 kanban ^collapsed",
@@ -304,7 +304,7 @@ describe("node_width", () => {
 describe("stickies", () => {
   const withStickies = (stickies: string) =>
     `---\ntype: mindmap\ntitle: ideas\ncreated: 2026-08-26\nupdated: 2026-08-26\n---\n\n` +
-    `## Nodes\n\n- N-001 workhub\n  - N-002 schedule\n\n` +
+    `## Nodes\n\n- N-001 website\n  - N-002 schedule\n\n` +
     `## Stickies\n\n${stickies}\n\n## Memo\n\nhuman prose\n`;
 
   it("reads a sticky's node, offset, colour and text", () => {
@@ -466,7 +466,7 @@ describe("Windows line endings", () => {
     const doc = parseMindmap(
       crlf(
         note(
-          ["- N-001 workhub #blue", "  - N-002 tasks task:T-0042 prio:high", "    note line"].join(
+          ["- N-001 website #blue", "  - N-002 tasks task:T-0042 prio:high", "    note line"].join(
             "\n",
           ),
         ),
@@ -484,14 +484,14 @@ describe("Windows line endings", () => {
   });
 
   it("writes a CRLF note back as CRLF, and an LF one as LF", () => {
-    const lf = note("- N-001 workhub");
+    const lf = note("- N-001 website");
     expect(serializeMindmap(crlf(lf), parseMindmap(crlf(lf)), "2026-09-02")).toContain("\r\n");
     const out = serializeMindmap(lf, parseMindmap(lf), "2026-09-02");
     expect(out).not.toContain("\r");
   });
 
   it("leaves a CRLF note untouched when nothing changed but the date", () => {
-    const src = crlf(note("- N-001 workhub #blue\n  - N-002 tasks"));
+    const src = crlf(note("- N-001 website #blue\n  - N-002 tasks"));
     const out = serializeMindmap(src, parseMindmap(src), "2026-08-26");
     expect(out).toBe(src);
   });

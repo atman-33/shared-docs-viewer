@@ -3,11 +3,10 @@
 //! `main.rs` carries `#![cfg_attr(not(debug_assertions), windows_subsystem =
 //! "windows")]`, so a packaged build has no console and every `eprintln!` it
 //! makes is written to a handle nobody can read. That made a bug report from
-//! the only build users actually run ("the voice indicator appeared in the
-//! wrong place") impossible to investigate after the fact: probes like the
-//! caret position, the raw-input state or the foreground window read *another
-//! process's* state at that instant, and re-running them later in a dev build
-//! does not reproduce the moment.
+//! the only build users actually run ("the viewer window appeared in the
+//! wrong place") impossible to investigate after the fact: probes read
+//! *another process's* state at that instant, and re-running them later in
+//! a dev build does not reproduce the moment.
 //!
 //! Every diagnostic therefore goes through [`diag!`], which fans one line out
 //! to three places at once:
@@ -16,8 +15,8 @@
 //! 2. **An in-memory ring** of the most recent [`RING_CAPACITY`] lines, shown
 //!    in Settings (`diagnostic-log-panel.tsx`) so a user can read and copy the
 //!    log without leaving the app — the same idea as the input-listener panel.
-//! 3. **`~/.workhub/logs/workhub.log`**, so the record survives the crash or
-//!    the restart that follows the problem.
+//! 3. **`~/.shared-docs-viewer/logs/shared-docs-viewer.log`**, so the record
+//!    survives the crash or the restart that follows the problem.
 //!
 //! ## What must never be logged
 //!
@@ -31,8 +30,9 @@
 //! ## Size
 //!
 //! The file is capped by rotation rather than by a retention setting: at
-//! [`MAX_BYTES`] it is renamed to `workhub.log.1` (replacing the previous
-//! one) and a fresh file starts, so the two generations together never exceed
+//! [`MAX_BYTES`] it is renamed to `shared-docs-viewer.log.1` (replacing the
+//! previous one) and a fresh file starts, so the two generations together
+//! never exceed
 //! ~2 MiB no matter how long the app runs.
 
 use std::collections::VecDeque;
@@ -88,11 +88,11 @@ pub fn log_dir() -> PathBuf {
 }
 
 pub fn log_path() -> PathBuf {
-    log_dir().join("workhub.log")
+    log_dir().join("shared-docs-viewer.log")
 }
 
 fn rotated_path() -> PathBuf {
-    log_dir().join("workhub.log.1")
+    log_dir().join("shared-docs-viewer.log.1")
 }
 
 /// Records one diagnostic line. Called through [`diag!`] rather than
@@ -175,11 +175,10 @@ pub fn info() -> DiagLogInfo {
 /// The panic hook is the reason this is worth doing at startup rather than
 /// lazily. A panic in a release build previously printed to the console that
 /// does not exist and then vanished; a background thread panicking that way
-/// (the raw-input listener, the vault watcher, an stt worker) leaves the
-/// feature silently dead with nothing to go on.
+/// leaves the feature silently dead with nothing to go on.
 pub fn init() {
     crate::diag!(
-        "workhub {} starting ({}, {})",
+        "shared-docs-viewer {} starting ({}, {})",
         crate::update::current_version(),
         std::env::consts::OS,
         if cfg!(debug_assertions) {

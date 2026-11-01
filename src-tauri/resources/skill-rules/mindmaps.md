@@ -20,7 +20,7 @@ ever rewrites:
 ```markdown
 ## Nodes
 
-- N-001 workhub #blue
+- N-001 website #blue
   - N-002 tasks #green task:T-0042 prio:high
     - N-003 kanban ^collapsed
   - N-004 schedule #amber tags:検討中,見積り

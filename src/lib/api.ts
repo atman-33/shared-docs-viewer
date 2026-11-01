@@ -1,52 +1,23 @@
-import { type Channel, invoke } from "@tauri-apps/api/core";
-import type { MusicData } from "@/lib/music/types";
-import type { TaskEditorPayload } from "@/lib/task-editor-bridge";
+import { invoke } from "@tauri-apps/api/core";
 import type {
-  BacklogItem,
-  DiagramDoc,
-  DiagramFile,
-  BranchList,
-  Clip,
-  CommitFileChange,
   Config,
-  CreateTaskInput,
   DiagEntry,
   DiagLogInfo,
+  DiagramDoc,
   DocsEntry,
   DocsOpenPathResolution,
   DocsRootStatus,
   DocsShortcut,
   DocsViewerPayload,
-  GitInfo,
-  GitLog,
-  GraphOp,
-  InboxNote,
-  InkCapture,
-  InputListenerDiagnostics,
   MindmapDoc,
   MindmapFile,
-  Notice,
-  PersonaCharacter,
-  PersonaState,
-  PluginCommandResult,
-  PluginDetails,
-  PluginsState,
   ScheduleDoc,
-  DiagramEditRun,
   ScheduleFile,
-  SttModelStatus,
   Task,
-  TemplateDiff,
-  TidyRun,
   UpdateInfo,
   UpdateTaskInput,
   VaultProject,
-  VoiceHistoryEntry,
-  VoiceMeeting,
-  VoiceCaptureStatus,
-  MeetingStructStatus,
   WikiLinkResolution,
-  Worktree,
 } from "@/types";
 
 export const api = {
@@ -63,58 +34,9 @@ export const api = {
     return api.saveConfig({ ...cfg, settings: { ...cfg.settings, ...patch } });
   },
   // ---- vault tidy (T-0050) ----
-  tidyStatus: () => invoke<TidyRun>("tidy_status"),
-  runVaultTidyNow: (force: boolean) =>
-    invoke<string>("run_vault_tidy_now", { force }),
-  resumeTidySession: () => invoke<string>("resume_tidy_session"),
-  // ---- inbox notes (the vault's `inbox/` folder, T-0104) ----
-  listInboxNotes: (vaultPath: string) =>
-    invoke<InboxNote[]>("list_inbox_notes", { vaultPath }),
-  readInboxNote: (path: string) => invoke<string>("read_inbox_note", { path }),
-  gitStatus: (path: string) => invoke<GitInfo>("git_status", { path }),
-  listBranches: (path: string) => invoke<BranchList>("list_branches", { path }),
-  gitOp: (path: string, op: "fetch" | "pull" | "switch", branch?: string) =>
-    invoke<string>("git_op", { path, op, branch: branch ?? null }),
-  gitRemoteUrl: (path: string) => invoke<string>("git_remote_url", { path }),
-  listWorktrees: (paths: string[]) =>
-    invoke<Worktree[]>("list_worktrees", { paths }),
-  removeWorktree: (repoPath: string, worktreePath: string, force: boolean) =>
-    invoke<string>("remove_worktree", { repoPath, worktreePath, force }),
-  deleteWorktreeBranch: (repoPath: string, branch: string, force: boolean) =>
-    invoke<string>("delete_worktree_branch", { repoPath, branch, force }),
-  gitLog: (
-    path: string,
-    limit: number,
-    skip: number,
-    extraBranches: string[],
-    showAll: boolean,
-    requestId: string,
-  ) => invoke<GitLog>("git_log", { path, limit, skip, extraBranches, showAll, requestId }),
-  gitLogCancel: (requestId: string) => invoke<void>("git_log_cancel", { requestId }),
-  gitDefaultLogRefs: (path: string) => invoke<string[]>("git_default_log_refs", { path }),
-  gitGraphOp: (path: string, op: GraphOp) =>
-    invoke<string>("git_graph_op", { path, op }),
-  gitCommitFiles: (path: string, hash: string) =>
-    invoke<CommitFileChange[]>("git_commit_files", { path, hash }),
-  gitCommitFileDiff: (path: string, hash: string, file: string, oldFile?: string | null) =>
-    invoke<string>("git_commit_file_diff", { path, hash, file, oldFile: oldFile ?? null }),
-  openInVscode: (vscodeCmd: string, paths: string[]) =>
-    invoke<void>("open_in_vscode", { vscodeCmd, paths }),
-  openTerminal: (template: string, path: string) =>
-    invoke<void>("open_terminal", { template, path }),
-  launchAgent: (template: string, path: string) =>
-    invoke<void>("launch_agent", { template, path }),
-  opencodeModels: () => invoke<string[]>("opencode_models"),
-  /** A folder opens in Explorer; a file is selected in its parent folder, never launched. */
   openExplorer: (path: string) => invoke<void>("open_explorer", { path }),
-  openInObsidian: (path: string) => invoke<void>("open_in_obsidian", { path }),
   appVersion: () => invoke<string>("app_version"),
   // ---- global keyboard listener health (ink / clips gestures) ----
-  inputListenerDiagnostics: () =>
-    invoke<InputListenerDiagnostics>("input_listener_diagnostics"),
-  restartInputListener: () =>
-    invoke<InputListenerDiagnostics>("restart_input_listener"),
-  // ---- the app's own diagnostic log (release builds have no console) ----
   diagnosticLog: (limit?: number) => invoke<DiagEntry[]>("diagnostic_log", { limit }),
   diagnosticLogInfo: () => invoke<DiagLogInfo>("diagnostic_log_info"),
   /** Records a webview crash into the diagnostic log. A packaged build has no
@@ -126,88 +48,13 @@ export const api = {
   checkUpdate: () => invoke<UpdateInfo | null>("check_update"),
   applyUpdate: (url: string) => invoke<void>("apply_update", { url }),
   restartApp: () => invoke<void>("restart_app"),
-  memorySetupOk: () => invoke<boolean>("memory_setup_ok"),
-
-  // ---- tasks (vault-backed) ----
-  checkVaultPath: (vaultPath: string) =>
-    invoke<boolean>("check_vault_path", { vaultPath }),
-  /** Whether the vault template has been applied there — `checkVaultPath` only
-   * says the folder exists, and an empty folder is a valid thing to pick. */
-  vaultInitialized: (vaultPath: string) =>
-    invoke<boolean>("vault_initialized", { vaultPath }),
   listTasks: (vaultPath: string) => invoke<Task[]>("list_tasks", { vaultPath }),
-  notices: (vaultPath: string) => invoke<Notice[]>("notices", { vaultPath }),
-  createTask: (vaultPath: string, input: CreateTaskInput) =>
-    invoke<Task>("create_task", { vaultPath, input }),
   updateTask: (vaultPath: string, input: UpdateTaskInput) =>
     invoke<Task>("update_task", { vaultPath, input }),
-  deleteTask: (vaultPath: string, id: string) =>
-    invoke<void>("delete_task", { vaultPath, id }),
-  initVault: (vaultPath: string) => invoke<void>("init_vault", { vaultPath }),
-  watchVault: (vaultPath: string) => invoke<void>("watch_vault", { vaultPath }),
-  checkVaultTemplate: (vaultPath: string) =>
-    invoke<TemplateDiff>("check_vault_template", { vaultPath }),
-  /** `overwrite` lists conflicting paths the user chose to replace with the
-   * template. A conflicting path not listed there keeps the vault's file
-   * untouched and only advances its baseline (dismiss-this-version); an
-   * overwritten one first saves the prior content as `<name>.bak`. */
-  applyVaultTemplate: (vaultPath: string, paths: string[], overwrite: string[] = []) =>
-    invoke<void>("apply_vault_template", { vaultPath, paths, overwrite }),
-  /** Applies only the updates that cannot lose user edits (added/updatable),
-   * leaving conflicts for the review dialog. Resolves to the written paths. */
-  applySafeTemplateUpdates: (vaultPath: string) =>
-    invoke<string[]>("apply_safe_template_updates", { vaultPath }),
-  /** Removes template leftovers the vault still has untouched. Each path is
-   * re-checked in Rust at removal time, so a stale selection does less rather
-   * than more. Resolves to the paths actually removed. */
-  removeTemplateOrphans: (vaultPath: string, paths: string[]) =>
-    invoke<string[]>("remove_template_orphans", { vaultPath, paths }),
-  /** Keeps the listed template leftovers in place and drops their manifest
-   * entries, so they are never offered for removal again. Resolves to the
-   * paths actually retained. */
-  retainTemplateOrphans: (vaultPath: string, paths: string[]) =>
-    invoke<string[]>("retain_template_orphans", { vaultPath, paths }),
-  previewVaultTemplateFile: (vaultPath: string, path: string) =>
-    invoke<string>("preview_vault_template_file", { vaultPath, path }),
-  // ---- vault projects (projects/<slug>/, T-0190) ----
-  /** Every project folder under the vault's `projects/`, with what it holds
-   * and where it departs from the documented layout. */
   listVaultProjects: (vaultPath: string, includeArchived: boolean) =>
     invoke<VaultProject[]>("list_vault_projects", { vaultPath, includeArchived }),
   /** The backlog items of one project, for the task editor's item picker.
    * Empty rather than an error when the project has no `backlog/` folder. */
-  listBacklogItems: (vaultPath: string, slug: string) =>
-    invoke<BacklogItem[]>("list_backlog_items", { vaultPath, slug }),
-  /** Opens a backlog item's entry note in Obsidian (its folder in Explorer
-   * when the note is missing). Rejects when the item cannot be found. */
-  openBacklogItem: (vaultPath: string, slug: string, backlog: string) =>
-    invoke<void>("open_backlog_item", { vaultPath, slug, backlog }),
-  /** Creates a backlog item in the project from a title and returns it. */
-  createBacklogItem: (vaultPath: string, slug: string, title: string) =>
-    invoke<BacklogItem>("create_backlog_item", { vaultPath, slug, title }),
-  /** Moves the project to `archive/projects/<slug>/`; returns the new path.
-   * There is no delete — archiving is the only removal, and it is reversible
-   * with `restoreVaultProject`. */
-  archiveVaultProject: (vaultPath: string, slug: string) =>
-    invoke<string>("archive_vault_project", { vaultPath, slug }),
-  restoreVaultProject: (vaultPath: string, slug: string) =>
-    invoke<string>("restore_vault_project", { vaultPath, slug }),
-  /** Links the project to registered repositories (`repos:` in its
-   * `_index.md`), in order — the first is the project's default repository.
-   * Pass an empty array to clear the link. */
-  setVaultProjectRepos: (vaultPath: string, slug: string, repos: string[]) =>
-    invoke<void>("set_vault_project_repos", { vaultPath, slug, repos }),
-  /** Writes the display name and description into README.md frontmatter.
-   * The folder slug is not renamed. */
-  setVaultProjectDetails: (vaultPath: string, slug: string, name: string, summary: string) =>
-    invoke<void>("set_vault_project_details", { vaultPath, slug, name, summary }),
-  /** Writes the `alias` into README.md frontmatter; an empty string clears it.
-   * Rejects a malformed alias and one another project already uses (T-0562). */
-  setVaultProjectAlias: (vaultPath: string, slug: string, alias: string) =>
-    invoke<void>("set_vault_project_alias", { vaultPath, slug, alias }),
-  /** Pins the project and records its manual sort position in `_index.md`.
-   * Pass `null` for `order` to clear the position, which puts the project
-   * back at the end of its group (T-0231). */
   setVaultProjectOrder: (
     vaultPath: string,
     slug: string,
@@ -267,19 +114,8 @@ export const api = {
       vaultPath: guard?.vaultPath,
       project: guard?.project,
     }),
-  runDiagramEdit: (path: string, instruction: string, confirm: boolean) =>
-    invoke<string>("run_diagram_edit", { path, instruction, confirm }),
   copyDiagramEditPrompt: (path: string, instruction: string, confirm: boolean) =>
     invoke<void>("copy_diagram_edit_prompt", { path, instruction, confirm }),
-  diagramEditStatus: () => invoke<DiagramEditRun>("diagram_edit_status"),
-  restoreDiagramSnapshot: (path: string) =>
-    invoke<DiagramDoc>("restore_diagram_snapshot", { path }),
-  hasSnapshot: (path: string) => invoke<boolean>("has_snapshot", { path }),
-
-  // ---- Docs tab: read-only browsing of shared Markdown (T-0259) ----
-  // The backend reads the allowed roots from the config itself, so these take
-  // a path and never a root — a path outside every registered root is refused
-  // there, not here.
   docsRoots: () => invoke<DocsRootStatus[]>("docs_roots"),
   addDocsRoot: (path: string, name: string) =>
     invoke<DocsRootStatus[]>("add_docs_root", { path, name }),
@@ -343,20 +179,6 @@ export const api = {
 
   // ---- diagrams (any note under projects/ whose `type` is a diagram kind) ----
   /** `project` narrows to one project slug; pass "" for every project. */
-  listDiagrams: (vaultPath: string, project = "") =>
-    invoke<DiagramFile[]>("list_diagrams", { vaultPath, project }),
-  /** `backlog` is a `B-NNN` item id, or "" for the project-wide folder;
-   * `range` is only read for a schedule. */
-  createDiagram: (
-    vaultPath: string,
-    project: string,
-    kind: string,
-    title: string,
-    backlog = "",
-    range = "",
-  ) => invoke<DiagramFile>("create_diagram", { vaultPath, project, kind, title, backlog, range }),
-  // Kind-independent access to one diagram note, used by the newer kinds
-  // (Schedule and Mindmap keep their own commands and undo history).
   readDiagram: (path: string) => invoke<DiagramDoc>("read_diagram", { path }),
   /** Returns the new mtime. Rejects when the file changed on disk since it was
    * read; pass `expectedMtime: 0` to write unconditionally. */
@@ -364,12 +186,6 @@ export const api = {
     invoke<number>("write_diagram", { path, content, expectedMtime }),
   /** Renames a note: frontmatter `title` and file name move together. Returns
    * the note at its new path, which the caller must reselect. */
-  renameDiagram: (vaultPath: string, path: string, title: string) =>
-    invoke<DiagramFile>("rename_diagram", { vaultPath, path, title }),
-  /** Moves the note into `_ai/state/diagram-trash/` and returns where it went. */
-  deleteDiagram: (vaultPath: string, path: string) =>
-    invoke<string>("delete_diagram", { vaultPath, path }),
-  /** HTML or SVG export; `guard` as for `exportMindmapFile` (T-0379). */
   exportDiagramFile: (
     outPath: string,
     content: string,
@@ -441,269 +257,9 @@ export const api = {
       project: guard.project,
     }),
   // ---- music player (vault-backed) ----
-  loadMusicData: (vaultPath: string) =>
-    invoke<MusicData | null>("load_music_data", { vaultPath }),
-  saveMusicData: (vaultPath: string, data: MusicData) =>
-    invoke<void>("save_music_data", { vaultPath, data }),
-  exportPlaylistFile: (path: string, contents: string) =>
-    invoke<void>("export_playlist_file", { path, contents }),
-  importPlaylistFile: (path: string) => invoke<string>("import_playlist_file", { path }),
-  fetchYoutubeTitle: (videoId: string) =>
-    invoke<string>("fetch_youtube_title", { videoId }),
-
-  launchAgentForTask: (
-    agentCmd: string,
-    assignee: string,
-    taskId: string,
-    taskTitle: string,
-    taskFile: string,
-    project: string,
-    model: string,
-    confirm: boolean,
-    worktree: boolean,
-    worktreeRoot: string,
-    vaultPath: string,
-    useHerdr: boolean,
-    herdrCmd: string,
-    terminalEmbed: boolean,
-    language: string,
-    customPrompt: string,
-    force = false,
-  ) =>
-    invoke<string>("launch_agent_for_task", {
-      agentCmd,
-      assignee,
-      taskId,
-      taskTitle,
-      taskFile,
-      project,
-      model,
-      confirm,
-      worktree,
-      worktreeRoot,
-      vaultPath,
-      useHerdr,
-      herdrCmd,
-      terminalEmbed,
-      language,
-      customPrompt,
-      force,
-    }),
-
-  copyTaskPrompt: (
-    assignee: string,
-    taskId: string,
-    taskTitle: string,
-    taskFile: string,
-    project: string,
-    model: string,
-    confirm: boolean,
-    worktree: boolean,
-    worktreeRoot: string,
-    vaultPath: string,
-    language: string,
-    customPrompt: string,
-    multiline: boolean,
-  ) =>
-    invoke<void>("copy_task_prompt", {
-      assignee,
-      taskId,
-      taskTitle,
-      taskFile,
-      project,
-      model,
-      confirm,
-      worktree,
-      worktreeRoot,
-      vaultPath,
-      language,
-      customPrompt,
-      multiline,
-    }),
-
-  /** Opens Claude Desktop on a new session for the task with the prompt
-   * prefilled. `mode` is the `claude_desktop_mode` setting; `description` is
-   * the task's Description text, read only by chat mode. Returns a status
-   * message describing which kind of session was opened. */
-  sendTaskToClaudeDesktop: (
-    assignee: string,
-    taskId: string,
-    taskTitle: string,
-    taskFile: string,
-    project: string,
-    model: string,
-    confirm: boolean,
-    worktree: boolean,
-    worktreeRoot: string,
-    vaultPath: string,
-    language: string,
-    customPrompt: string,
-    mode: string,
-    description: string,
-  ) =>
-    invoke<string>("send_task_to_claude_desktop", {
-      assignee,
-      taskId,
-      taskTitle,
-      taskFile,
-      project,
-      model,
-      confirm,
-      worktree,
-      worktreeRoot,
-      vaultPath,
-      language,
-      customPrompt,
-      mode,
-      description,
-    }),
-
-  // ---- embedded terminal (xterm.js + ConPTY running the herdr client) ----
-  /** Returns true when an already-running PTY session was reused. Output is
-   * streamed over `onOutput` (an ordered IPC channel — unlike events, safe
-   * for high-throughput TUI redraws). */
-  terminalOpen: (id: string, cols: number, rows: number, onOutput: Channel<string>) =>
-    invoke<boolean>("terminal_open", { id, cols, rows, onOutput }),
-  terminalWrite: (id: string, data: string) =>
-    invoke<void>("terminal_write", { id, data }),
-  terminalResize: (id: string, cols: number, rows: number) =>
-    invoke<void>("terminal_resize", { id, cols, rows }),
-  terminalClose: (id: string) => invoke<void>("terminal_close", { id }),
-
-  // ---- voice input (local speech-to-text) ----
-  sttModelStatus: () => invoke<SttModelStatus[]>("stt_model_status"),
-  sttDownloadModel: (model: string) => invoke<void>("stt_download_model", { model }),
-  sttDeleteModel: (model: string) => invoke<void>("stt_delete_model", { model }),
-  voiceStopRecording: () => invoke<void>("voice_stop_recording"),
-  voiceCancelRecording: () => invoke<void>("voice_cancel_recording"),
-  captureStatus: () => invoke<VoiceCaptureStatus>("voice_capture_status"),
-
-  // ---- clips (clibor-style snippet picker) ----
-  clipsList: () => invoke<Clip[]>("clips_list"),
-  clipsSave: (clips: Clip[]) => invoke<void>("clips_save", { clips }),
-  clipsPaste: (id: string) => invoke<void>("clips_paste", { id }),
-  clipsHide: () => invoke<void>("clips_hide"),
-
-  // ---- ink captures (annotated screenshots) ----
-  inkCaptureDir: () => invoke<string>("ink_capture_dir"),
-  listInkCaptures: () => invoke<InkCapture[]>("list_ink_captures"),
-  /** Full-size image as a `data:image/png;base64,...` URL. */
-  readInkCapture: (path: string) => invoke<string>("read_ink_capture", { path }),
-  copyInkCapture: (path: string) => invoke<void>("copy_ink_capture", { path }),
-  /** Copies a frontend-rendered image (a crop) without writing a file. */
-  copyInkPng: (base64Data: string) => invoke<void>("copy_ink_png", { base64Data }),
-  /** `base64Data` is the payload of a `data:image/png;base64,...` URL. */
-  saveInkCrop: (sourcePath: string, base64Data: string) =>
-    invoke<string>("save_ink_crop", { sourcePath, base64Data }),
-  /** Sends the capture to the recycle bin. */
-  deleteInkCapture: (path: string) => invoke<void>("delete_ink_capture", { path }),
-  /** Shows the floating preview window (move/resize/crop) on the capture. */
-  openInkPreview: (path: string) => invoke<void>("open_ink_preview", { path }),
-  /** Hides the floating preview window. */
-  inkPreviewHide: () => invoke<void>("ink_preview_hide"),
-
-  // ---- task editor window ----
-  /** Shows the task editor window and hands it the form's whole input. */
-  openTaskEditor: (payload: TaskEditorPayload) =>
-    invoke<void>("open_task_editor", { payload }),
-  /** Hides the task editor window — its ✕ lands here. */
-  taskEditorHide: () => invoke<void>("task_editor_hide"),
-  /** Asks the board to open the embedded terminal panel before a launch. */
-  taskEditorRequestTerminalPanel: () =>
-    invoke<void>("task_editor_request_terminal_panel"),
-  /** Brings the main window (and with it the terminal panel) to the front. */
-  focusMainWindow: () => invoke<void>("focus_main_window"),
   revealMainWindow: () => invoke<void>("reveal_main_window"),
 
   // ---- voice input: transcript history ----
-  voiceHistoryList: () => invoke<VoiceHistoryEntry[]>("voice_history_list"),
-  voiceHistoryDelete: (id: string) => invoke<void>("voice_history_delete", { id }),
-
-  // ---- voice meeting mode (T-0252): accumulate transcripts into a file ----
-  voiceMeetingStart: () => invoke<VoiceMeeting>("voice_meeting_start"),
-  voiceMeetingFinish: () => invoke<VoiceMeeting | null>("voice_meeting_finish"),
-  voiceMeetingStatus: () => invoke<VoiceMeeting | null>("voice_meeting_status"),
-  voiceMeetingList: () => invoke<VoiceMeeting[]>("voice_meeting_list"),
-  voiceMeetingRead: (id: string) => invoke<string>("voice_meeting_read", { id }),
-  voiceMeetingDelete: (id: string) => invoke<void>("voice_meeting_delete", { id }),
-  voiceMeetingPrompt: (id: string) => invoke<string>("voice_meeting_prompt", { id }),
-  voiceMeetingMinutes: (id: string) => invoke<string>("voice_meeting_minutes", { id }),
-  structStatus: () => invoke<MeetingStructStatus | null>("voice_struct_status"),
-  runStructNow: () => invoke<string>("voice_struct_run_now"),
-  structLog: (id: string) => invoke<string>("voice_struct_log", { id }),
-  structRepro: () => invoke<string>("voice_struct_repro"),
-  // ---- persona plugin (Persona tab) ----
-  // An empty character list is how the app decides the plugin is not in use.
-  personaCharacters: () => invoke<PersonaCharacter[]>("persona_characters"),
-  personaState: () => invoke<PersonaState>("persona_state"),
-  /** True when the standalone `genshijin` plugin is cached alongside
-   * `persona` — both style every turn, so the tab warns about the pair. */
-  personaGenshijinInstalled: () => invoke<boolean>("persona_genshijin_installed"),
-  /// Writes the plugin's persisted default; it applies from the next session.
-  setPersonaState: (enabled: boolean, character: string | null, level: string) =>
-    invoke<PersonaState>("set_persona_state", { enabled, character, level }),
-  /** Sends a hand-made character to the OS recycle bin. Built-in ones are
-   * refused by the backend; deleting the saved default also clears it. */
-  deletePersonaCharacter: (id: string) =>
-    invoke<string>("delete_persona_character", { id }),
-  voiceHistoryClear: () => invoke<void>("voice_history_clear"),
-
-  // ---- workhub marketplace plugins (Plugins tab) ----
-  /** Catalog, installed versions, marketplace versions and enabled state. */
-  pluginsState: (vaultPath: string) =>
-    invoke<PluginsState>("plugins_state", { vaultPath }),
-  /** What one plugin contains, read from the copy installed at `scope`. */
-  pluginDetails: (vaultPath: string, name: string, marketplace: string, scope: string) =>
-    invoke<PluginDetails>("plugin_details", { vaultPath, name, marketplace, scope }),
-  /** Adds or removes one enabledPlugins key; applies from the next session. */
-  setPluginEnabled: (
-    vaultPath: string,
-    name: string,
-    marketplace: string,
-    scope: "project" | "user",
-    enabled: boolean,
-  ) =>
-    invoke<PluginsState>("set_plugin_enabled", {
-      vaultPath,
-      name,
-      marketplace,
-      scope,
-      enabled,
-    }),
-  /** `claude plugin marketplace add atman-33/workhub`; already registered is a
-   * success. The source is fixed in the backend — registering the same name in
-   * both source forms makes Claude Code ignore the marketplace wholesale. */
-  pluginsAddMarketplace: (vaultPath: string) =>
-    invoke<PluginCommandResult>("plugins_add_marketplace", { vaultPath }),
-  /** Refreshes the marketplace clone every "latest version" is compared against. */
-  pluginsUpdateMarketplace: (vaultPath: string, marketplace: string) =>
-    invoke<PluginCommandResult>("plugins_update_marketplace", { vaultPath, marketplace }),
-  pluginsUpdatePlugin: (
-    vaultPath: string,
-    name: string,
-    marketplace: string,
-    scope: string,
-  ) =>
-    invoke<PluginCommandResult>("plugins_update_plugin", {
-      vaultPath,
-      name,
-      marketplace,
-      scope,
-    }),
-  /** `claude plugin install` — fetches a plugin that is on disk nowhere and
-   * enables it at `scope`, so its contents are readable right away. */
-  pluginsInstallPlugin: (
-    vaultPath: string,
-    name: string,
-    marketplace: string,
-    scope: "project" | "user",
-  ) =>
-    invoke<PluginCommandResult>("plugins_install_plugin", {
-      vaultPath,
-      name,
-      marketplace,
-      scope,
-    }),
 };
 
 export function timeAgo(unixSecs: number): string {

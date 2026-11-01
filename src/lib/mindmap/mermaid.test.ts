@@ -22,9 +22,9 @@ describe("sanitizeTitle", () => {
 
 describe("toMermaid", () => {
   it("renders the root as a circle and nests by indentation", () => {
-    const out = toMermaid(tree(["- N-001 workhub", "  - N-002 tasks", "    - N-003 kanban"]));
+    const out = toMermaid(tree(["- N-001 website", "  - N-002 tasks", "    - N-003 kanban"]));
     expect(out).toBe(
-      ["mindmap", "  root((workhub))", "    tasks", "      kanban"].join("\n"),
+      ["mindmap", "  root((website))", "    tasks", "      kanban"].join("\n"),
     );
   });
 

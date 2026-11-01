@@ -1,21 +1,10 @@
 import type { MessageKey } from "./en";
 import { projectsJa } from "./projects.ja";
-import { reposJa } from "./repos.ja";
-import { inboxJa } from "./inbox.ja";
-import { pluginsJa } from "./plugins.ja";
 import { miscJa } from "./misc.ja";
 import { scheduleJa } from "./schedule.ja";
 import { mindmapJa } from "./mindmap.ja";
 import { diagramJa } from "./diagram.ja";
-import { graphJa } from "./graph.ja";
 import { docsJa } from "./docs.ja";
-import { musicJa } from "./music.ja";
-import { timerJa } from "./timer.ja";
-import { voiceJa } from "./voice.ja";
-import { clipsJa } from "./clips.ja";
-import { inkJa } from "./ink.ja";
-import { personaJa } from "./persona.ja";
-import { helpJa } from "./help.ja";
 
 /**
  * Japanese UI strings (T-0409). Typed against the English keys, so a key that
@@ -29,51 +18,21 @@ export const ja: Partial<Record<MessageKey, string>> = {
   "common.save": "保存",
   "common.delete": "削除",
   "common.close": "閉じる",
-  "common.dismiss": "閉じる",
-  "common.later": "あとで",
-  "common.edit": "編集",
+
   "common.add": "追加",
   "common.remove": "削除",
   "common.copy": "コピー",
   "common.copied": "コピーしました",
-  "common.search": "検索",
-  "common.loading": "読み込み中…",
+
   "common.retry": "再試行",
   "common.refresh": "更新",
-  "common.none": "なし",
-  "common.confirm": "確認",
-  "common.optional": "任意",
+
   "common.open": "開く",
   "common.today": "今日",
   "common.create": "作成",
 
-  "nav.tasks": "タスク",
-  "nav.projects": "プロジェクト",
-  "nav.repos": "リポジトリ",
-  "nav.schedule": "スケジュール",
-  "nav.diagrams": "図解",
-  "nav.mindmap": "マインドマップ",
   "nav.docs": "ドキュメント",
-  "nav.inbox": "受信箱",
-  "nav.music": "音楽",
-  "nav.timer": "タイマー",
-  "nav.voice": "音声",
-  "nav.clips": "クリップ",
-  "nav.ink": "インク",
-  "nav.persona": "ペルソナ",
-  "nav.plugins": "プラグイン",
-  "nav.help": "ヘルプ",
-  "nav.moreTabs": "その他のタブ",
-  "nav.hideTab": "{tab} を非表示",
-  "nav.hideTabLast": "{tab} を非表示（最後の表示中タブ）",
-  "nav.hiddenTabs": "非表示のタブ",
-  "nav.showTab": "{tab} を表示",
-  "nav.resetTabs": "タブの並びと表示を初期化",
-  "nav.quickSwitch.title": "タブへ移動",
-  "nav.quickSwitch.description": "タブ名を入力して移動します",
-  "nav.quickSwitch.placeholder": "タブへ移動...",
-  "nav.quickSwitch.empty": "一致するタブがありません。",
-  "nav.quickSwitch.hidden": "非表示",
+
   "nav.zoomAria": "画面ズーム {percent}%、ズーム操作を開く",
   "nav.zoomOut": "縮小",
   "nav.zoomIn": "拡大",
@@ -88,269 +47,15 @@ export const ja: Partial<Record<MessageKey, string>> = {
   "banner.update.restartNow": "今すぐ再起動",
   "banner.update.failed": "更新に失敗しました: {error}",
 
-  "banner.memorySetup.text": "この端末では長期記憶エンジンがセットアップされていません。",
-  "banner.memorySetup.prefix": "有効にするには",
-  "banner.memorySetup.suffix": "スキルを vault 上の Claude Code セッションで実行してください。",
-  "banner.memorySetup.dontShowAgain": "今後表示しない",
-
-  "banner.plugin.marketplaceNotReady":
-    "workhub マーケットプレイスの準備ができていないため、プラグインのバージョンを確認できません",
-  "banner.plugin.missing": "workhub プラグインが無効です — タスク起動とAI編集に必要です",
-  "banner.plugin.outdated": "workhub プラグイン {installed} → {latest} が利用可能です",
-  "banner.plugin.takesEffect": "次の Claude Code セッションから反映されます",
-  "banner.plugin.enabling": "有効化中…",
-  "banner.plugin.enable": "有効化",
-  "banner.plugin.updating": "更新中…",
-  "banner.plugin.update": "更新",
-
-  "banner.breaking.whatChanged": "変更内容",
-  "banner.breaking.filedNotice": "{id} を作成しました — ボードから開けます",
-  "banner.breaking.introducedIn": "workhub {version} で導入",
-  "banner.breaking.blockedPlugin":
-    "この移行はこの端末にまだないプラグインに含まれています: {blockers}。先にそれを更新してください — 今タスクを作成しても、存在しないスキルをエージェントに指すことになります。",
-  "banner.breaking.filedDialog":
-    "{id} を作成しました。タスクボードから起動してください。実行前に承認を求めます。",
-  "banner.breaking.stopShowing": "この vault では今後表示しない",
-  "banner.breaking.markAsDone": "対応済みにする",
-  "banner.breaking.copyPrompt": "プロンプトをコピー",
-  "banner.breaking.filing": "作成中…",
-  "banner.breaking.createTask": "タスクを作成",
-
-  "template.state.added": "追加",
-  "template.state.update": "更新",
-  "template.state.conflict": "競合",
-  "template.state.upToDate": "最新",
-  "template.autoApplied.updatedOne": "vault テンプレートファイルを1件更新しました",
-  "template.autoApplied.updatedOther": "vault テンプレートファイルを{count}件更新しました",
-  "template.autoApplied.hide": "隠す",
-  "template.autoApplied.details": "詳細",
-  "template.update.findingsOne": "vault テンプレートに1件の更新があります",
-  "template.update.findingsOther": "vault テンプレートに{count}件の更新があります",
-  "template.update.review": "確認",
-  "template.update.title": "vault テンプレートの更新",
-  "template.update.description": "バンドルされた vault テンプレートから更新するファイルを選択してください。",
-  "template.update.conflictWarning":
-    "このファイルはあなたが編集し、テンプレート側でも変更されています。解決方法を選んでください — 内容に確信が持てない場合は先に差分を確認してください。",
-  "template.update.removedTitle": "テンプレートから削除されたファイル",
-  "template.update.removedDescription":
-    "テンプレートがこれらの配布を停止し、あなたの手元のファイルは配布時点のものと同一のままなので、削除してもあなたが書いた内容は失われません。編集済みのファイルはここには表示されず、決して触れられません。フォルダはそのまま残ります。ファイルを残して以後尋ねられないようにするには、横の「保持」を押してください。",
-  "template.update.removeBadge": "削除",
-  "template.update.keep": "保持",
-  "template.update.updateAll": "すべて最新に更新",
-  "template.update.apply": "選択を適用",
-  "template.update.updating": "更新中…",
-  "template.update.confirmTitle": "すべて最新に更新しますか？",
-  "template.update.confirmDescription":
-    "競合するファイルはテンプレートで上書きされます（以前の内容は各ファイルの横に .bak として保存されます）。テンプレートに存在しなくなったファイルは削除され、復元できません。続けるには「すべて更新」を押してください。",
-  "template.update.confirmLabel": "すべて更新",
-  "template.update.resolutionKeep": "自分のものを維持",
-  "template.update.resolutionOverwrite": "テンプレートで置き換え（.bak を保存）",
-  "template.update.resolutionAria": "{path} の解決方法",
-  "template.update.hideDiff": "差分を隠す",
-  "template.update.showDiff": "差分を表示",
-  "template.update.diffFailed": "差分の取得に失敗しました — {error}",
-
-  "task.priority.low": "低",
-  "task.priority.medium": "中",
-  "task.priority.high": "高",
-  "task.priority.cycleHint": "クリックで優先度を変更",
-
-  "task.blocked.label": "ブロック中",
-  "task.blocked.clickToEdit": "クリックで理由を編集",
-
-  "task.dependency.waiting": "{ids} 待ち",
-  "task.dependency.waitingTooltip": "次のタスクが完了するまで着手できません:",
-  "task.dependency.startTitle": "先行タスクが完了していません",
-  "task.dependency.startDescription":
-    "{id} は未完了の先行タスクに依存しています。いま着手すると、その順序を飛ばすことになります。",
-  "task.dependency.startAnyway": "それでも着手",
-
-  "task.blockedDialog.editTitle": "ブロック理由を編集",
-  "task.blockedDialog.markTitle": "ブロック中にする",
-  "task.blockedDialog.editDescription": "このタスクは何を待っていますか？",
-  "task.blockedDialog.markDescription": "このタスクは何を待っていますか？待機期間は今日から数えられます。",
-  "task.blockedDialog.placeholder": "例: ベンダーの見積もり、佐藤さんのレビュー",
-
   "task.status.todo": "未着手",
   "task.status.doing": "進行中",
   "task.status.review": "レビュー",
   "task.status.done": "完了",
   "task.status.inbox": "受信箱",
 
-  "task.list.empty": "現在のフィルタに一致するタスクはありません。",
-  "task.list.archivedBadge": "アーカイブ済み",
-  "task.archive.shown": "アーカイブ {shown} / {total} 件を表示中",
-  "task.archive.more": "さらに 50 件表示",
-  "task.archive.all": "すべて表示",
-  "task.list.planRecorded": "Plan 記録あり",
-  "task.list.editBlockedReason": "ブロック理由を編集…",
-  "task.list.markBlocked": "ブロック中にする…",
-  "task.list.unblock": "ブロック解除",
-  "task.list.unarchive": "アーカイブ解除",
-  "task.list.openBacklogItem": "バックログ項目を Obsidian で開く",
-  "task.list.archive": "アーカイブ",
-  "task.list.deleteEllipsis": "削除…",
-
-  "task.terminal.settingsHint": "ターミナル設定",
-  "task.terminal.embedLabel": "ターミナルを埋め込む",
-  "task.terminal.embedDescription":
-    "外部ウィンドウを起動する代わりに、アプリ内に herdr を表示します。オフにするとこのボタンの横の「ターミナル」トグルが隠れます。",
-  "task.kanban.archiveAllDone": "完了タスクをすべてアーカイブ",
-
-  "task.assignee.me": "自分",
-  "task.assignee.claudeCode": "Claude Code",
-  "task.assignee.opencode": "OpenCode",
-
-  "task.toolbar.newTask": "新規タスク",
-  "task.toolbar.initializing": "初期化中…",
-  "task.toolbar.initVault": "vault を初期化",
-  "task.toolbar.initVaultTooltip":
-    "既定の vault テンプレートを設定済みの vault フォルダにコピーします。既存のファイルは上書きされません。",
-  "task.toolbar.allStatuses": "すべてのステータス",
-  "task.toolbar.allAssignees": "すべての担当者",
-  "task.toolbar.allProjects": "すべてのプロジェクト",
-  "task.toolbar.noProject": "プロジェクト未設定",
-  "task.toolbar.allTags": "すべてのタグ",
-  "task.toolbar.searchPlaceholder": "タスクを検索…",
-  "task.toolbar.searchClear": "検索をクリア",
-  "task.toolbar.filters": "絞り込み",
-  "task.toolbar.filtersReset": "絞り込みをリセット",
-  "task.toolbar.more": "その他",
-  "task.toolbar.blockedAny": "ブロック: すべて",
-  "task.toolbar.blockedOnly": "ブロック中のみ",
-  "task.toolbar.notBlocked": "ブロックされていない",
-  "task.toolbar.dependencyAny": "依存: すべて",
-  "task.toolbar.dependencyWaiting": "依存待ちのみ",
-  "task.toolbar.dependencyReady": "着手可能のみ",
-  "task.toolbar.blockedHintStale": "{count}件ブロック中 · うち{stale}件は1週間以上待機",
-  "task.toolbar.blockedHint": "{count}件ブロック中",
-  "task.toolbar.hideArchived": "アーカイブ済みタスクを隠す",
-  "task.toolbar.showArchived": "アーカイブ済みタスクを表示",
-  "task.toolbar.archivedLabel": "アーカイブ済み",
-  "task.toolbar.recurringHint": "決まったスケジュールでタスクをボードに追加するルール",
-  "task.toolbar.recurring": "定期タスク",
-  "task.toolbar.terminalHint": "埋め込みターミナル（herdr）の表示切り替え",
-  "task.toolbar.terminal": "ターミナル",
-  "task.toolbar.list": "リスト",
-  "task.kanban.noProject": "(プロジェクトなし)",
-  "task.kanban.laneSummary": "{count}件 · 進行中 {doing}",
-  "task.toolbar.groupByProject": "プロジェクト別",
-  "task.toolbar.groupByProjectHint": "プロジェクトごとの行に分けて表示",
-  "task.confirm.moveProjectTitle": "プロジェクトを変更",
-  "task.confirm.moveProjectDescription": "「{id} {title}」のプロジェクトを「{from}」から「{to}」に変更しますか？バックログ項目の紐づけは外れます。",
-  "task.confirm.moveProjectConfirm": "変更する",
-  "task.toolbar.kanban": "カンバン",
-
-  "task.footer.summary": "{total}件のタスク · {shown}件表示中",
-
-  "task.setupPending.text": "この vault はまだセットアップされていません。",
-  "task.setupPending.detail": "テンプレート、マーケットプレイス、workhub プラグインがまだ未対応です。",
-  "task.setupPending.resume": "セットアップを再開",
-
-  "task.empty.noVaultTitle": "タスク vault が設定されていません",
-  "task.empty.vaultNotFoundTitle": "設定された vault が見つかりません",
-  "task.empty.noVaultDescription":
-    "タスクは専用の Obsidian vault 内に Markdown ファイルとして保存されます。既存の vault フォルダ、または初期化用の空フォルダを選択してください。",
-  "task.empty.vaultNotFoundDescription": "設定された vault フォルダが見つかりません: {path}",
-  "task.empty.chooseFolder": "vault フォルダを選択",
-  "task.empty.chooseFolderDialogTitle": "vault フォルダを選択または作成",
-
-  "task.confirm.deleteTitle": "タスクを削除",
-  "task.confirm.deleteDescription": "「{id} {title}」をゴミ箱に移動しますか？",
-  "task.confirm.archiveDoneDescriptionOne": "完了列の1件のタスクをアーカイブしますか？",
-  "task.confirm.archiveDoneDescriptionOther": "完了列の{count}件すべてのタスクをアーカイブしますか？",
-
-  "task.msg.loadFailed": "タスクの読み込みに失敗しました — {error}",
-  "task.msg.vaultCheckFailed": "vault の確認に失敗しました — {error}",
-  "task.msg.vaultInitialized": "vault を初期化しました",
-  "task.msg.vaultInitFailed": "vault の初期化に失敗しました — {error}",
-  "task.msg.launchFailed": "エージェントの起動に失敗しました — {error}",
-  "task.msg.copiedPrompt": "{id} のプロンプトをコピーしました",
-  "task.msg.copyFailed": "プロンプトのコピーに失敗しました — {error}",
-  "task.msg.sendFailed": "Claude Desktop への送信に失敗しました — {error}",
-  "task.msg.openObsidianFailed": "Obsidian で開けませんでした — {error}",
-  "task.msg.openBacklogFailed": "バックログ項目を開けませんでした — {error}",
-  "task.msg.updateFailed": "更新に失敗しました — {error}",
-  "task.msg.deleted": "{id} を削除しました（ゴミ箱に移動）",
-  "task.msg.deleteFailed": "削除に失敗しました — {error}",
-  "task.msg.openEditorFailed": "タスクエディタを開けませんでした — {error}",
-
-  "taskEditor.msg.loadSettingsFailed": "設定を読み込めませんでした — {error}",
-  "taskEditor.msg.createFailed": "作成に失敗しました — {error}",
-  "taskEditor.msg.autoSaveFailed": "自動保存に失敗しました — {error}",
-
-  "taskEditor.windowTitle": "workhub — タスクエディタ",
-  "taskEditor.header.editTask": "{id} — タスクを編集",
-  "taskEditor.field.title": "タイトル",
-  "taskEditor.field.titlePlaceholder": "タスクのタイトル",
-  "taskEditor.field.status": "ステータス",
-  "taskEditor.field.assignee": "担当者",
-  "taskEditor.field.model": "モデル（AI起動時）",
-  "taskEditor.field.modelPlaceholderMe": "自分には該当なし",
-  "taskEditor.field.modelPlaceholderAgent": "エージェントの既定値",
-  "taskEditor.field.confirm": "確認",
-  "taskEditor.field.confirmHint":
-    "エージェントが依頼の解釈と計画を示し、実行前にあなたの承認を待ちます。",
-  "taskEditor.toggle.on": "ON",
-  "taskEditor.toggle.off": "OFF",
-  "taskEditor.field.worktree": "Worktree",
-  "taskEditor.field.worktreeHint":
-    "エージェントは専用の worktree で作業するため、並行タスクが衝突しません。",
-  "taskEditor.field.project": "プロジェクト",
-  "taskEditor.project.none": "プロジェクトなし",
-  "taskEditor.project.placeholder": "vault プロジェクト",
-  "taskEditor.project.empty": "vault プロジェクトがありません。Projects タブで作成してください。",
-  "taskEditor.project.unregistered": "{project} は vault プロジェクトではありません",
-  "taskEditor.field.backlogItem": "バックログ項目",
-  "taskEditor.backlog.createHint": "このプロジェクトに新しいバックログ項目を作成",
-  "taskEditor.backlog.createAria": "新しいバックログ項目を作成",
-  "taskEditor.backlog.none": "項目なし",
-  "taskEditor.backlog.placeholder": "バックログ項目",
-  "taskEditor.backlog.empty": "{project} にバックログ項目がありません。",
-  "taskEditor.backlog.unknown": "{backlog} は {project} の項目ではありません",
-  "taskEditor.backlog.newItemPlaceholder": "新しい項目のタイトル",
-  "taskEditor.optional.label": "オプション",
-  "taskEditor.optional.setAria": "オプション項目が設定されています",
-  "taskEditor.field.due": "期限",
-  "taskEditor.field.tags": "タグ（カンマ区切り）",
-  "taskEditor.field.tagsPlaceholder": "feature, bug",
-  "taskEditor.field.dependsOn": "先行タスク",
-  "taskEditor.field.dependsOnDescription":
-    "このタスクの着手前に完了している必要があるタスク。完了すると自動で解消されます。",
-  "taskEditor.field.dependsOnAdd": "先行タスクを追加…",
-  "taskEditor.field.dependsOnEmpty": "追加できるタスクがありません（循環になるものは除外）",
-  "taskEditor.field.dependsOnRemove": "{id} を外す",
-  "taskEditor.field.dependsOnUnknown": "見つかりません",
-  "taskEditor.field.blocked": "ブロック中",
-  "taskEditor.field.blockedDescription":
-    "他の誰かの対応待ちです。タスクのステータスはそのままで、ボードには待機期間が表示されます。",
-  "taskEditor.field.waitingOn": "待っている内容",
-  "taskEditor.field.blockedSince": "ブロック開始日",
-  "taskEditor.description.placeholder":
-    "タスクの説明 — AI エージェントに渡されるプロンプトの文脈です。",
-  "taskEditor.description.clickToEdit": "クリックして編集",
-  "taskEditor.footer.createAndOpen": "作成して Obsidian で編集",
-
-  "quickCapture.windowTitle": "workhub — クイックキャプチャ",
-  "quickCapture.header.title": "クイックキャプチャ",
-  "quickCapture.field.titlePlaceholder": "タスクのタイトル",
-  "quickCapture.project.none": "プロジェクトなし",
-  "quickCapture.description.placeholder":
-    "説明（コピーした Slack / PR / monday のリンクがここに貼り付けられます）",
-  "quickCapture.clearDescriptionAria": "説明をクリア",
-  "quickCapture.pasteClipboard": "クリップボードを貼り付け（{count}文字）",
-  "quickCapture.saving": "保存中…",
-  "quickCapture.saveToInbox": "受信箱に保存",
-  "quickCapture.footer.hint": "Ctrl+Enter で保存 · Esc で閉じる",
-  "quickCapture.msg.noVault": "タスク vault が設定されていません — workhub の設定で設定してください。",
-  "quickCapture.notify.title": "タスクを作成しました: {id}",
-
   "settings.title": "設定",
-  "settings.description":
-    "このアプリが動作する vault、アプリの動作、AI エージェントの起動方法。特定のタブが管理する設定はそのタブにあります。",
-  "settings.vaultFolder.label": "vault フォルダ",
-  "settings.vaultFolder.placeholder": "C:/obsidian/workhub-vault",
-  "settings.vaultFolder.chooseDialogTitle": "vault フォルダを選択",
+  "settings.description": "\u30a2\u30d7\u30ea\u306e\u52d5\u4f5c\u3068\u3001\u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u304c\u8fd4\u7b54\u3059\u308b\u8a00\u8a9e\u306e\u8a2d\u5b9a\u3067\u3059\u3002\u5358\u4e00\u306e\u30bf\u30d6\u304c\u6240\u6709\u3059\u308b\u8a2d\u5b9a\u306f\u305d\u306e\u30bf\u30d6\u306b\u3042\u308a\u307e\u3059\u3002",
+
   "settings.tab.general": "一般",
   "settings.tab.agents": "エージェント",
 
@@ -364,23 +69,11 @@ export const ja: Partial<Record<MessageKey, string>> = {
   "settings.general.language.description":
     "アプリの画面が表示される言語です。スケジュールカレンダーとその HTML エクスポートを含みます。未翻訳の画面は英語のままです。表示のみに影響し、ノートに書き込まれる内容は翻訳されません。",
   "settings.general.startup.title": "起動",
-  "settings.general.startup.autostart": "Windows サインイン時に workhub を起動する",
-  "settings.general.startup.autostartDescription":
-    "最小化された状態で起動するため、グローバルホットキー、vault ウォッチャー、tidy ルーチンがウィンドウを邪魔せずに動作します。必要なときはタスクバーから開いてください。",
+  "settings.general.startup.autostart": "Windows \u30b5\u30a4\u30f3\u30a4\u30f3\u6642\u306b shared-docs-viewer \u3092\u8d77\u52d5\u3059\u308b",
+  "settings.general.startup.autostartDescription": "\u6700\u5c0f\u5316\u3055\u308c\u305f\u72b6\u614b\u3067\u8d77\u52d5\u3057\u307e\u3059\u3002\u4f7f\u3046\u3068\u304d\u306f\u30bf\u30b9\u30af\u30d0\u30fc\u304b\u3089\u958b\u3044\u3066\u304f\u3060\u3055\u3044\u3002",
   "settings.general.startupChecks.title": "起動時のチェック",
   "settings.general.startupChecks.checkUpdates": "アプリの更新を確認する",
-  "settings.general.startupChecks.checkTemplate": "vault テンプレートの更新を確認する",
-  "settings.general.startupChecks.autoApply": "安全なテンプレート更新を確認なしで適用する",
-  "settings.general.startupChecks.autoApplyDescription":
-    "新規ファイルと未編集のファイルは黙って更新されます。自分で編集したファイルは、変更前に必ず確認を求められます。",
-  "settings.general.features.title": "機能",
-  "settings.general.features.inkNotePrefix":
-    "画面注釈（Alt を素早く2回押して長押しで描画）は",
-  "settings.general.features.inkNoteSuffix":
-    "タブで設定します。保存されたキャプチャの隣にあります。",
-  "settings.general.features.quickCapture":
-    "クイックキャプチャ（ホットキーでクリップボードを受信箱のタスクに変換）",
-  "settings.general.features.quickCaptureHotkeyLabel": "クイックキャプチャのホットキー",
+
   "settings.general.appUpdate.title": "アプリの更新",
   "settings.general.appUpdate.currentVersion": "現在のバージョン: v{version}",
   "settings.general.appUpdate.checking": "確認中…",
@@ -392,44 +85,8 @@ export const ja: Partial<Record<MessageKey, string>> = {
   "settings.general.appUpdate.upToDate": "最新の状態です。",
   "settings.general.appUpdate.failed": "更新に失敗しました: {error}",
 
-  "settings.agents.introPrefix":
-    "workhub がタスクのためにエージェントをどう起動し、何を渡すか。コマンドテンプレートはプロジェクトパスの代わりに",
-  "settings.agents.introSuffix":
-    "を受け取ります。リポジトリを VS Code やターミナルで開くコマンドは Repos タブに属し、そこで設定します。",
-  "settings.agents.claudeCodeCommand": "Claude Code コマンド",
-  "settings.agents.opencodeCommand": "OpenCode コマンド",
-  "settings.agents.herdrCheckbox": "AI タスクを新しい herdr ワークスペースで開く",
-  "settings.agents.herdrCommand": "herdr コマンド",
-  "settings.agents.worktreeRoot": "Worktree のルート",
-  "settings.agents.claudeDesktop.label": "Claude Desktop へ送信",
-  "settings.agents.claudeDesktop.description":
-    "タスクの Claude Desktop ボタンが何を開くか。コード セッションは vault 内で実行され、ターミナル起動と同じプロンプトを渡すため、task-start や task-report のようなスキルが機能します。チャットにはスキルも vault へのアクセスもなく、代わりにタスクの Description を受け取ります — タスクを進めるためではなく相談用です。Claude Desktop は初回にフォルダの確認を求めます。",
-  "settings.agents.claudeDesktop.modeCode": "コードセッション（vault をフォルダとして）",
-  "settings.agents.claudeDesktop.modeChat": "チャット（相談のみ）",
   "settings.agents.language.label": "言語",
-  "settings.agents.language.description":
-    "AI エージェントが返信する言語で、タスクの Plan と Results、および自動 vault tidy が作成するタスクもこの言語で書かれます。コード、コメント、コミットメッセージには影響しません。",
-  "settings.agents.remindEveryTurn.label": "エージェントに毎回リマインドする",
-  "settings.agents.remindEveryTurn.description":
-    "Language 設定の1行リマインダーを、Claude Code と OpenCode の両方で毎回のプロンプトに挿入します — 静的な指示だけではセッションが途中で英語に戻るのを止められませんでした。",
-  "settings.agents.customPrompt.label": "カスタムプロンプト",
-  "settings.agents.customPrompt.description":
-    "エージェントの起動時とプロンプトのコピー時の両方で、すべてのタスクプロンプトの末尾に追加されます。改行は、下のコピーがそれを保持しない限りスペースにまとめられます。",
-  "settings.agents.customPrompt.placeholder": "例: 日本語で返答してください。",
-  "settings.agents.lineBreaks.label": "コピーしたプロンプトの改行",
-  "settings.agents.lineBreaks.description":
-    "プロンプトのコピーは各指示を1行ずつにします。オフにすると1行にまとめてコピーします。エージェントの起動は常に1行を使います — コマンドラインは改行を扱えません。",
-  "settings.agents.memory.title": "長期記憶",
-  "settings.agents.memory.claudeCode": "Claude Code セッションで有効",
-  "settings.agents.memory.opencode": "OpenCode セッションで有効",
-  "settings.agents.memory.notifyStartup": "この端末で未設定のとき起動時に通知する",
-  "settings.agents.secretary.title": "秘書エージェント",
-  "settings.agents.secretary.checkbox": "私に尋ねる前に秘書に相談する",
-  "settings.agents.secretary.descriptionPrefix": "エージェントは決定方針（",
-  "settings.agents.secretary.descriptionMid":
-    "）を秘書サブエージェントを通じて確認し、判断できなかったものを",
-  "settings.agents.secretary.descriptionSuffix":
-    "に記録し、あなたに割り込みません。相談にはトークンがかかるため既定ではオフです。オンにすると Claude Code と OpenCode の両方のセッションで有効になります。オフのままでも、エージェントは方針を読み、推奨する答えを持ってきますが、直接あなたに尋ねます。",
+  "settings.agents.language.description": "AI \u30a8\u30fc\u30b8\u30a7\u30f3\u30c8\u304c\u8fd4\u7b54\u3059\u308b\u8a00\u8a9e\u3002",
 
   "settings.footer.saveFailed": "保存に失敗しました: {error}",
   "settings.footer.resetToDefaults": "既定値にリセット",
@@ -437,20 +94,9 @@ export const ja: Partial<Record<MessageKey, string>> = {
 
   // Areas kept in their own files (T-0423).
   ...projectsJa,
-  ...reposJa,
-  ...inboxJa,
-  ...pluginsJa,
   ...miscJa,
   ...scheduleJa,
   ...mindmapJa,
   ...diagramJa,
-  ...graphJa,
   ...docsJa,
-  ...musicJa,
-  ...timerJa,
-  ...voiceJa,
-  ...clipsJa,
-  ...inkJa,
-  ...personaJa,
-  ...helpJa,
 };

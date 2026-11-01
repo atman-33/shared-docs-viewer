@@ -16,18 +16,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
-        // Ink screen-annotation overlay window (see src-tauri/src/ink/).
-        overlay: path.resolve(__dirname, "overlay.html"),
-        // Ink preview window: full-size capture + crop (see ink_preview.rs).
-        "ink-preview": path.resolve(__dirname, "ink-preview.html"),
-        // Task editor window (see src-tauri/src/task_editor.rs).
-        "task-editor": path.resolve(__dirname, "task-editor.html"),
-        // Quick-capture window (see src-tauri/src/quick_capture.rs).
-        "quick-capture": path.resolve(__dirname, "quick-capture.html"),
-        // Voice-input recording/transcribing indicator (see src-tauri/src/voice.rs).
-        "voice-indicator": path.resolve(__dirname, "voice-indicator.html"),
-        // Clips snippet picker popup (see src-tauri/src/clips/).
-        clips: path.resolve(__dirname, "clips.html"),
         // Docs viewer windows: a document or figure popped out of the Docs tab
         // (see src-tauri/src/docs_viewer.rs).
         "docs-viewer": path.resolve(__dirname, "docs-viewer.html"),

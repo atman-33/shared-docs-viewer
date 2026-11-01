@@ -9,16 +9,16 @@ const P = "C:/vault/projects";
 
 describe("resolveOpenNote", () => {
   it("keeps the open note while both listings still account for it", () => {
-    const files = [file(`${P}/0010-workhub/schedules/a.md`), file(`${P}/0010-workhub/schedules/b.md`)];
+    const files = [file(`${P}/0010-acme/schedules/a.md`), file(`${P}/0010-acme/schedules/b.md`)];
     expect(
-      resolveOpenNote({ path: `${P}/0010-workhub/schedules/b.md`, files, projects: ["workhub"] }),
-    ).toBe(`${P}/0010-workhub/schedules/b.md`);
+      resolveOpenNote({ path: `${P}/0010-acme/schedules/b.md`, files, projects: ["acme"] }),
+    ).toBe(`${P}/0010-acme/schedules/b.md`);
   });
 
   it("opens the first note when none is open", () => {
-    const files = [file(`${P}/0010-workhub/schedules/a.md`)];
-    expect(resolveOpenNote({ path: "", files, projects: ["workhub"] })).toBe(
-      `${P}/0010-workhub/schedules/a.md`,
+    const files = [file(`${P}/0010-acme/schedules/a.md`)];
+    expect(resolveOpenNote({ path: "", files, projects: ["acme"] })).toBe(
+      `${P}/0010-acme/schedules/a.md`,
     );
   });
 
@@ -26,15 +26,15 @@ describe("resolveOpenNote", () => {
     const files = [file(`${P}/0020-demo/schedules/x.md`)];
     expect(
       resolveOpenNote({
-        path: `${P}/0010-workhub/schedules/a.md`,
+        path: `${P}/0010-acme/schedules/a.md`,
         files,
-        projects: ["workhub", "demo"],
+        projects: ["acme", "demo"],
       }),
     ).toBe(`${P}/0020-demo/schedules/x.md`);
   });
 
   it("lets go of a note whose project has left the list", () => {
-    const open = `${P}/0010-workhub/schedules/a.md`;
+    const open = `${P}/0010-acme/schedules/a.md`;
     expect(resolveOpenNote({ path: open, files: [file(open)], projects: ["demo"] })).toBe("");
   });
 
@@ -59,12 +59,12 @@ describe("resolveOpenNote", () => {
   });
 
   it("returns nothing when there is nothing left to open", () => {
-    expect(resolveOpenNote({ path: "", files: [], projects: ["workhub"] })).toBe("");
+    expect(resolveOpenNote({ path: "", files: [], projects: ["acme"] })).toBe("");
     expect(
       resolveOpenNote({
-        path: `${P}/0010-workhub/schedules/a.md`,
+        path: `${P}/0010-acme/schedules/a.md`,
         files: [],
-        projects: ["workhub"],
+        projects: ["acme"],
       }),
     ).toBe("");
   });

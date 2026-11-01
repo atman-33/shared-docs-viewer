@@ -80,7 +80,7 @@ pub fn render(server: &str, source: &str) -> Result<String, String> {
     let url = svg_url(server, source);
     let agent = ureq::AgentBuilder::new()
         .timeout(TIMEOUT)
-        .user_agent(concat!("workhub/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("shared-docs-viewer/", env!("CARGO_PKG_VERSION")))
         .build();
     let response = match agent.get(&url).call() {
         Ok(r) => r,

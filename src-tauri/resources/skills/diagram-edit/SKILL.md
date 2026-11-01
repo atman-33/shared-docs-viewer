@@ -1,18 +1,19 @@
 ---
 name: diagram-edit
-description: Edit a workhub diagram note (schedule, mindmap, matrix2x2, flow, pfd, algorithm, usecase, architecture or ifdam) from a natural-language instruction - add, rename, move, group, recolour or link its elements, and annotate them with sticky notes. Reads the note's frontmatter `type` and follows that kind's rule file. Use when asked to restructure or adjust a diagram, or when the workhub app launches a diagram edit.
+description: Edit a diagram note (schedule, mindmap, matrix2x2, flow, pfd, algorithm, usecase, architecture or ifdam) from a natural-language instruction - add, rename, move, group, recolour or link its elements, and annotate them with sticky notes. Reads the note's frontmatter `type` and follows that kind's rule file. Use when asked to restructure or adjust a diagram, or when the viewer's copy-prompt button hands you this skill with a file path and an instruction.
 argument-hint: "<diagram-file-path> <instruction>"
 ---
 
 # Diagram Edit
 
-Apply a natural-language instruction to one workhub diagram note by rewriting
+Apply a natural-language instruction to one diagram note by rewriting
 **only the affected lines**.
 
-The workhub app's Diagrams tab launches this skill with the file path and the
-instruction (and, in confirm mode, asks for a diff instead of a write). It also
-works when invoked by hand. It is the one skill for every kind of diagram: it
-carries the shared procedure and nothing about any single format.
+The viewer's copy-prompt button hands this skill's path to an agent session
+along with the file path and the instruction (and, in confirm mode, asks for
+a diff instead of a write). It also works when invoked by hand. It is the one
+skill for every kind of diagram: it carries the shared procedure and nothing
+about any single format.
 
 ## Find the format first
 
@@ -20,7 +21,8 @@ carries the shared procedure and nothing about any single format.
 repeat it.** Read the note, then its rule, before changing a line:
 
 1. Read the whole target file and take the frontmatter `type`.
-2. Read the rule for that type (the vault's `.claude/rules/`):
+2. Read the rule for that type (the `skill-rules/` directory shipped next to
+   this skill):
 
    | `type` | Rule to read |
    |---|---|
@@ -28,9 +30,7 @@ repeat it.** Read the note, then its rule, before changing a line:
    | `mindmap` | `mindmaps.md` |
    | `matrix2x2`, `flow`, `pfd`, `algorithm`, `usecase`, `architecture`, `ifdam` | `diagrams.md` - the shared section and the section named after the type |
 
-   The rule normally loads on its own when you read a note under `diagrams/`,
-   `schedules/` or `mindmaps/`; a note inside a backlog item does not always
-   trigger it, so open the file yourself when it did not appear.
+    The rule does not load on its own; open the rule file yourself.
 3. A `type` that is none of those nine, or a file with no `type` outside
    `schedules/` and `mindmaps/`, is not a diagram: say so and change nothing.
 
@@ -87,7 +87,7 @@ and everything below still applies.
 - **Never rewrite the whole file.** The diff is what the user reviews and what
   the app's undo restores; a wholesale rewrite destroys both.
 - **Never edit any file other than the target note.** In particular do not
-  create or update tasks in `tasks/`: a `task:` link is a reference, and
+  create or update task notes elsewhere: a `task:` link is a reference, and
   changing a task is a separate, explicit request.
 - **Never change an element the instruction did not mention**, and never
   reorder siblings or lines it did not mention.

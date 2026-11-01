@@ -1,89 +1,58 @@
-# workhub
+# shared-docs-viewer
 
-workhub — a Tauri 2 desktop "All-in-one Dev Hub" (Rust backend +
-React/TypeScript/shadcn-ui frontend), based on the devdeck codebase.
-Task management for humans and AI agents (Claude Code / OpenCode) backed by a
-dedicated Obsidian vault; repository management and a music player are planned
-as later modules.
+shared-docs-viewer — a small Windows desktop app (Tauri 2 + React 19 +
+Tailwind v4 + shadcn/ui) for reading a team's shared folders: Markdown
+documents and diagram notes, nothing else. One tab, no vault, no plugins.
+Third-party origins are recorded in [NOTICE.md](NOTICE.md).
 
 ## Commands
 
 ```powershell
 npm install                # frontend dependencies (first time)
-npm run tauri dev          # run the app with hot reload (or: npm run tauri:dev)
+npm run tauri:dev          # run the app with hot reload
+npm run build              # typecheck + frontend build
 npx tauri build --no-bundle # release build -> src-tauri/target/release/shared-docs-viewer.exe
-npm run build              # typecheck + build frontend only
 
 # in src-tauri/
-cargo test                 # unit tests (on the local windows-gnu toolchain use
-                           #   `cargo test --release` — debug test exes fail to
-                           #   load with STATUS_ENTRYPOINT_NOT_FOUND)
+cargo test                 # unit tests
 cargo fmt                  # format (CI enforces --check)
 cargo clippy -- -D warnings # lint (CI enforces)
 ```
 
 ## Architecture
 
-Backend (`src-tauri/src/`):
+Backend (`src-tauri/src/`), docs-first:
 
 | Module | Responsibility |
 |---|---|
 | `lib.rs` / `main.rs` | Tauri builder, command registration |
 | `commands.rs` | `#[tauri::command]` layer exposed to the frontend |
-| `models.rs` | domain types (`Task`, `Project`, `Settings`, `Config`, ...) |
-| `tasks.rs` | task Markdown parsing/writing, vault file watching, `_ai/index/tasks.json` |
-| `vault_project.rs` | vault projects (`projects/<slug>/`): folder scan, layout findings, archive/restore, repo link |
-| `git.rs` | git CLI integration (kept from devdeck for the repos module) |
-| `actions.rs` | external launches (VS Code, terminal, AI agent with task context) |
-| `storage.rs` | JSON persistence (`~/.workhub/config.json`; migrated from `%APPDATA%\workhub\` — see `storage::migrate_from_appdata`) |
-| `vault_settings.rs` | the vault-scoped settings split (`<vault>/.workhub/settings.json`); see `.claude/rules/settings-placement.md` before adding a setting |
-| `ink/` | screen-annotation overlay: Alt double-press gesture + transparent draw window (`overlay.html` / `src/overlay/main.ts`) |
-| `rawkey.rs` | the single, shared Raw Input keyboard listener behind `ink/` and `clips/` — registration is per-process, so features register a consumer here instead of their own listener (see `.claude/rules/global-keyboard-input.md`) |
-| `clips/` | clibor-style snippet picker: bare double-tap Ctrl opens a popup (`clips.html` / `src/clips-popup/`) that pastes the picked snippet into the previously focused app |
-| `paste.rs` | paste injection into the focused app (clipboard save/restore + synthesized Ctrl+V), shared by `voice.rs` and `clips/` |
-| `update.rs` | self-update against GitHub Releases (disabled by default; no releases yet) |
+| `models.rs` | domain types (`Task`, `VaultProject`, `Settings`, `Config`, ...) |
+| `docs.rs` | shared-folder roots, directory listing, file/asset reads |
+| `docs_viewer.rs` | popped-out docs viewer windows |
+| `diagram.rs` | diagram notes: read/write/rename/delete within the registered roots |
+| `diagram_edit.rs` | copy-prompt builder for the bundled `diagram-edit` skill |
+| `mindmap.rs` / `schedule.rs` | mindmap and schedule diagram kinds (notes + export) |
+| `vault_note.rs` / `vault_project.rs` | note frontmatter helpers and project folder layout |
+| `tasks.rs` | task-note parsing for the schedule/linked-task display |
+| `plantuml.rs` | PlantUML server rendering |
+| `update.rs` | self-update against GitHub Releases |
+| `storage.rs` | JSON persistence (`~/.shared-docs-viewer/config.json`) |
 
-Frontend (`src/`): React 19 + Tailwind v4 + shadcn/ui. `lib/api.ts` wraps
-`invoke()` with types matching the Rust structs (snake_case fields; command
-*parameters* are camelCase — Tauri converts).
+Frontend (`src/`): `lib/api.ts` wraps `invoke()` with types matching the
+Rust structs. Blocking work runs via `tauri::async_runtime::spawn_blocking`
+in commands — never on the UI thread.
 
-Blocking work (git calls, vault scans) runs via
-`tauri::async_runtime::spawn_blocking` in commands — never on the UI thread.
-
-## Data model: the vault is the source of truth
-
-Task data lives as Markdown + YAML frontmatter in a dedicated Obsidian vault
-(dev vault: `C:/repos/workhub-vault`, template: `vault-template/`).
-The app must:
-
-- treat frontmatter as the schema (`id`, `title`, `status`, `assignee`,
-  `project`, `priority`, `model`, `due`, `tags`, `created`, `updated`);
-- rewrite only the frontmatter keys it manages and **preserve the body** of
-  task files (human/AI-written prose);
-- pick up external edits (Obsidian, AI agents) via file watching;
-- English folder names in the vault are lowercase kebab-case (`tasks/`,
-  `knowledge/`, `_ai/`).
-
-Design docs live in the owner's vault:
-`C:/repos/workhub-vault/projects/workhub/`.
-
-## Plugin marketplace: the repo is the plugin source
-
-This repository doubles as a Claude Code plugin marketplace
-(`.claude-plugin/marketplace.json` + `plugins/`) — the single source of
-plugins for the workhub vault harness. Skills live in plugins, never in
-`vault-template/`; the vault carries configuration only. Each plugin is
-classified required/optional and user/project scope — see
-[docs/plugins.md](docs/plugins.md) for the catalog and the placement rules
-before adding or moving a skill.
+Only diagram notes are ever written back, and only inside a registered
+shared folder. Everything else is read-only.
 
 ## Workflow
 
 - Do all development on a branch cut from `main`, named
-  `<type>/<task-id>-<short-name>` — `<type>` is `feature`, `fix`, `docs` or
-  `chore` (never `feat`), the task id lowercase, e.g.
-  `feature/t-0456-battle-core`; drop the id for work with no task. Open a PR
-  into `main` when done. Don't commit directly to `main`.
+   `<type>/<task-id>-<short-name>` — `<type>` is `feature`, `fix`, `docs` or
+   `chore` (never `feat`), the task id lowercase, e.g.
+   `feature/t-1020-icon-refresh`. Open a PR into `main` when done. Don't
+   commit directly to `main`.
 - Any change that alters app behavior bumps `version` in
   `src-tauri/Cargo.toml` (semver) and adds a `CHANGELOG.md` entry in the same
   PR.
@@ -92,22 +61,12 @@ before adding or moving a skill.
 
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
 - Before committing: `cargo fmt`, `cargo clippy -- -D warnings`,
-  `cargo test --release`, and `npm run build` (typecheck) must pass.
+  `cargo test`, and `npm run build` (typecheck) must pass.
 - Shell out to the `git` CLI for git operations; do not introduce libgit2.
-- Keep the in-app **Help** tab (`src/components/help-view.tsx`) in sync: when
-  you change a user-facing operation or setup step that isn't discoverable from
-  the UI (ink shortcuts, quick capture, first-run setup), update its section
-  too — the text is Markdown in `src/lib/i18n/help/`, in English and Japanese.
-  See `.claude/rules/help-screen.md`.
 
 <important>
-- Config compatibility: `~/.workhub/config.json` (migrated on first run of
-  0.49.0+ from `%APPDATA%\workhub\config.json`) is read by every released
-  version — only add fields with `#[serde(default)]`, never rename or remove
-  existing ones.
+- Never write to a shared folder except through the diagram-note commands;
+  Markdown/text notes stay read-only.
 - Keep `crate-type` in `src-tauri/Cargo.toml` as plain rlib (no cdylib) —
   cdylib breaks windows-gnu debug builds ("export ordinal too large").
-- Never write to the vault's human zone (`tasks/`, `projects/`, `knowledge/`)
-  in ways that destroy hand-written body content; frontmatter-only updates
-  must round-trip the body untouched.
 </important>

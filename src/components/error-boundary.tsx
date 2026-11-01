@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
   private report() {
     const { error, componentStack } = this.state;
     return [
-      `workhub — ${this.props.label} failed to render`,
+      `shared-docs-viewer — ${this.props.label} failed to render`,
       error?.message ?? "unknown error",
       error?.stack ?? "",
       componentStack,

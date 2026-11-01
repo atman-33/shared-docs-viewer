@@ -12,7 +12,7 @@ pub struct Project {
     pub favorite: bool,
     #[serde(default)]
     pub notes: String,
-    /// Unix seconds of the last time this project was opened from Workhub.
+    /// Unix seconds of the last time this project was opened from the app.
     #[serde(default)]
     pub last_opened: Option<u64>,
     /// Extra branches (beyond the dynamically-computed defaults: HEAD, the
@@ -51,10 +51,7 @@ pub struct Settings {
     /// Path or command name for the herdr CLI.
     #[serde(default = "default_herdr_cmd")]
     pub herdr_cmd: String,
-    /// Start workhub when the user signs in to Windows (T-0258). The app is
-    /// a resident one — global hotkeys, the vault watcher and the tidy
-    /// scheduler only exist while it runs — so forgetting to launch it is
-    /// indistinguishable from the features being off.
+    /// Start the app when the user signs in to Windows (T-0258).
     ///
     /// Machine-local on purpose: it is backed by a registry entry holding
     /// *this* install's exe path, which no other machine can use. See
@@ -106,7 +103,7 @@ pub struct Settings {
     /// the setting exists for the people who want them somewhere shared.
     #[serde(default)]
     pub ink_dir: String,
-    /// Absolute path to the workhub Obsidian vault (task data store). Unset
+    /// Absolute path to the vault holding the task data store. Unset
     /// until the user configures or initializes a vault.
     #[serde(default)]
     pub vault_path: Option<String>,
@@ -261,7 +258,7 @@ pub struct Settings {
     /// logs) (T-0338). Vault-scoped like `docs_roots`: a location inside the
     /// vault the team agreed on, portable across machines — never an absolute
     /// path. Empty or unsafe (absolute, escaping) values fall back to the
-    /// legacy `~/.workhub/meetings`.
+    /// legacy meetings folder.
     #[serde(default = "default_voice_meetings_dir")]
     pub voice_meetings_dir: String,
     /// Default destination for HTML exports. Empty = the project's own
@@ -278,11 +275,8 @@ pub struct Settings {
     /// Markdown is browsed read-only, typically a Google Drive share the team
     /// keeps its notes in.
     ///
-    /// **Vault-scoped** (see `vault_settings::VAULT_SCOPED`), which is the one
-    /// deliberate exception to "paths are machine-local": a shared drive's
-    /// location is a value the *team* agreed on, not a property of this PC —
-    /// the vault's own `shared/` notes already record such locations in
-    /// `location:`.
+    /// Stored with the local config like every other setting; a shared drive's
+    /// location is a value the *team* agreed on, not a property of this PC.
     ///
     /// A machine that mounts the same share on a different letter therefore
     /// has to edit the path, which changes it for every machine. That is the
@@ -889,20 +883,6 @@ pub struct VaultProject {
     pub shared: Vec<SharedSpace>,
 }
 
-/// One backlog item as the task editor's picker sees it — enough to choose
-/// one without reading the notes inside it (T-0253).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BacklogItem {
-    /// `B-NNN`, as a task's `backlog:` records it.
-    pub id: String,
-    pub title: String,
-    /// idea | ready | doing | done | dropped. Empty when the item's entry note
-    /// is missing or says nothing.
-    pub status: String,
-    /// True when the item is a folder of notes (always true since T-0321).
-    pub folder: bool,
-}
-
 /// A task's frontmatter fields plus location and body — the app's view of
 /// one `tasks/<id> <title>.md` file in the vault.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1009,178 +989,6 @@ pub struct Config {
     pub settings: Settings,
     #[serde(default)]
     pub sort: SortMode,
-}
-
-/// Live git information for one project (not persisted).
-#[derive(Debug, Clone, Default, Serialize)]
-pub struct GitInfo {
-    pub is_repo: bool,
-    pub branch: String,
-    pub detached: bool,
-    pub has_upstream: bool,
-    pub ahead: u32,
-    pub behind: u32,
-    /// Number of uncommitted changed entries (staged + unstaged + untracked).
-    pub changes: u32,
-    pub branches: Vec<String>,
-    pub error: Option<String>,
-}
-
-/// One git worktree of a registered repo (not persisted). Task worktrees are
-/// created by agents on a `task/<id>` branch; `task_id` is derived from that
-/// branch name.
-#[derive(Debug, Clone, Serialize)]
-pub struct Worktree {
-    /// Absolute path of the worktree (forward slashes).
-    pub path: String,
-    /// Absolute path of the owning repo (the registered project path).
-    pub repo_path: String,
-    /// Display name of the owning repo.
-    pub repo_name: String,
-    /// Checked-out branch (short name); empty when detached or bare.
-    pub branch: String,
-    pub head: String,
-    /// True for the repo's primary working tree (not a task worktree).
-    pub is_main: bool,
-    pub bare: bool,
-    pub locked: bool,
-    pub detached: bool,
-    /// Has uncommitted or untracked changes (only computed for linked worktrees).
-    pub dirty: bool,
-    /// Task id parsed from a `task/<id>` branch, if any.
-    pub task_id: Option<String>,
-}
-
-/// A branch/remote/tag/HEAD decoration attached to a commit.
-#[derive(Debug, Clone, Serialize)]
-pub struct CommitRef {
-    pub name: String,
-    /// "branch" | "remote" | "tag" | "head"
-    pub kind: String,
-    pub is_head: bool,
-}
-
-/// One row of `git log` output.
-#[derive(Debug, Clone, Serialize)]
-pub struct CommitEntry {
-    pub hash: String,
-    pub parents: Vec<String>,
-    pub author: String,
-    pub date: i64,
-    pub refs: Vec<CommitRef>,
-    pub subject: String,
-}
-
-/// One changed file within a commit, for the graph view's diff panel.
-#[derive(Debug, Clone, Serialize)]
-pub struct CommitFileChange {
-    pub path: String,
-    /// Original path for renames/copies.
-    pub old_path: Option<String>,
-    /// Single-letter status: "A" | "M" | "D" | "R" | "C" | "T" | "U" (untracked).
-    pub status: String,
-    /// Added/removed line counts; `None` for binary files.
-    pub additions: Option<u32>,
-    pub deletions: Option<u32>,
-}
-
-/// A page of commit history plus repo-level context for the graph view.
-#[derive(Debug, Clone, Default, Serialize)]
-pub struct GitLog {
-    pub commits: Vec<CommitEntry>,
-    pub head: String,
-    pub current_branch: String,
-    pub uncommitted: u32,
-    pub has_more: bool,
-}
-
-/// Local and remote branch names for the graph-view branch switcher.
-#[derive(Debug, Clone, Default, Serialize)]
-pub struct BranchList {
-    pub local: Vec<String>,
-    pub remote: Vec<String>,
-    pub current: String,
-}
-
-/// A graph-view git operation. Parameters vary per kind, so this is dispatched
-/// via a tagged enum rather than a free-form op string (see `git_op`).
-#[derive(Debug, Clone, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum GraphOp {
-    Checkout {
-        branch: String,
-    },
-    CheckoutCommit {
-        hash: String,
-    },
-    DiscardChanges {
-        include_untracked: bool,
-    },
-    CreateBranch {
-        name: String,
-        hash: String,
-        checkout: bool,
-    },
-    DeleteBranch {
-        name: String,
-        force: bool,
-    },
-    Merge {
-        branch: String,
-    },
-    Rebase {
-        branch: String,
-    },
-    Push,
-    Pull,
-    Fetch,
-    Reset {
-        hash: String,
-        mode: String,
-    },
-    CherryPick {
-        hash: String,
-    },
-    CreateTag {
-        name: String,
-        hash: String,
-    },
-    DeleteTag {
-        name: String,
-    },
-}
-
-/// Health snapshot of the shared Raw Input keyboard listener (`rawkey.rs`),
-/// shown by the settings screen so a "the Alt gesture stopped working" report
-/// can be diagnosed without a rebuild. Durations are milliseconds, and `None`
-/// means "never happened".
-#[derive(Debug, Clone, Default, Serialize)]
-pub struct InputListenerDiagnostics {
-    /// Whether the listener thread is up at all.
-    pub running: bool,
-    /// Features currently listening (`ink`, `clips`).
-    pub consumers: Vec<String>,
-    /// How long the current listener has been registered.
-    pub uptime_ms: Option<u64>,
-    /// Time since the last observed key transition. A large value while the
-    /// user is actively typing is the signature of a dead registration.
-    pub last_input_ms_ago: Option<u64>,
-    pub input_count: u64,
-    pub reregistrations: u64,
-    pub restarts: u64,
-    /// Times the external watchdog rebuilt a dead listener thread or a
-    /// registration that no longer pointed at the listener.
-    pub rebuilds: u64,
-    /// Why the last automatic rebuild happened (`listener-thread-died`,
-    /// `registration-lost`, `manual-restart`).
-    pub last_rebuild_reason: Option<String>,
-    pub last_reregister_ms_ago: Option<u64>,
-    /// Why the last re-registration happened (`session-change`, `watchdog`, ...).
-    pub last_reregister_reason: Option<String>,
-    pub last_error: Option<String>,
-    /// A window of an elevated process is in the foreground, so UIPI is
-    /// withholding every key from this process — not a listener fault.
-    pub elevated_foreground: bool,
 }
 
 #[cfg(test)]

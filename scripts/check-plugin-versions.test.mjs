@@ -5,11 +5,11 @@ describe("pluginsInDiff", () => {
   it("names each plugin a changed file belongs to, once", () => {
     expect(
       pluginsInDiff([
-        "plugins/workhub/scripts/task-cli.mjs",
-        "plugins/workhub/skills/task-start/SKILL.md",
+        "plugins/atlas/scripts/task-cli.mjs",
+        "plugins/atlas/skills/task-start/SKILL.md",
         "plugins/persona/README.md",
       ]),
-    ).toEqual(["persona", "workhub"]);
+    ).toEqual(["atlas", "persona"]);
   });
 
   it("ignores everything outside plugins/", () => {
@@ -17,7 +17,7 @@ describe("pluginsInDiff", () => {
   });
 
   it("reads a backslash path, since git on Windows can hand one over", () => {
-    expect(pluginsInDiff(["plugins\\workhub\\README.md"])).toEqual(["workhub"]);
+    expect(pluginsInDiff(["plugins\\atlas\\README.md"])).toEqual(["atlas"]);
   });
 
   it("does not treat a file directly under plugins/ as a plugin", () => {
@@ -27,11 +27,11 @@ describe("pluginsInDiff", () => {
 
 describe("versionOf", () => {
   it("reads the version field", () => {
-    expect(versionOf('{"name":"workhub","version":"0.32.0"}')).toBe("0.32.0");
+    expect(versionOf('{"name":"atlas","version":"0.32.0"}')).toBe("0.32.0");
   });
 
   it("is null for a manifest without one, or one that will not parse", () => {
-    expect(versionOf('{"name":"workhub"}')).toBeNull();
+    expect(versionOf('{"name":"atlas"}')).toBeNull();
     expect(versionOf('{"version":31}')).toBeNull();
     expect(versionOf("not json")).toBeNull();
   });

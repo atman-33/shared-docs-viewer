@@ -274,8 +274,8 @@ pub fn export_html(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagram::{has_snapshot, restore_snapshot, save_snapshot};
-    use crate::vault_note::{create_project, list_projects};
+    use crate::vault_note::create_project;
+    use crate::vault_project::list_projects;
     use std::path::PathBuf;
     use std::time::UNIX_EPOCH;
 
@@ -284,7 +284,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("workhub-sched-{name}-{nanos}"));
+        let dir = std::env::temp_dir().join(format!("viewer-sched-{name}-{nanos}"));
         fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -346,19 +346,6 @@ mod tests {
         let again = create_schedule(&vault, "demo", "plan", "").unwrap();
         let moved2 = delete_schedule(&vault, &PathBuf::from(&again.path)).unwrap();
         assert_ne!(moved, moved2);
-        fs::remove_dir_all(&vault).ok();
-    }
-
-    #[test]
-    fn delete_drops_the_ai_snapshot_with_the_note() {
-        let vault = temp_vault_with_demo("delete-snapshot");
-        let created = create_schedule(&vault, "demo", "plan", "").unwrap();
-        let path = PathBuf::from(&created.path);
-
-        save_snapshot(&vault, &path).unwrap();
-        assert!(has_snapshot(&vault, &path));
-        delete_schedule(&vault, &path).unwrap();
-        assert!(!has_snapshot(&vault, &path));
         fs::remove_dir_all(&vault).ok();
     }
 
@@ -459,55 +446,12 @@ created: 2026-07-24\nupdated: 2026-07-24\n---\n\n## Non-working\n\n- weekly: sat
     }
 
     #[test]
-    fn rename_carries_the_snapshot_to_the_new_path() {
-        let vault = temp_vault_with_demo("rename-snapshot");
-        let created = create_schedule(&vault, "demo", "plan", "").unwrap();
-        let path = PathBuf::from(&created.path);
-        let original = read_schedule(&path).unwrap().content;
-        save_snapshot(&vault, &path).unwrap();
-
-        let renamed = rename_schedule(&vault, &path, "later").unwrap();
-        let new_path = PathBuf::from(&renamed.path);
-        assert!(!has_snapshot(&vault, &path));
-        assert!(has_snapshot(&vault, &new_path));
-
-        // The undo still restores the pre-rename content (title included), so
-        // an AI edit made before the rename remains undoable after it.
-        let restored = restore_snapshot(&vault, &new_path).unwrap();
-        assert_eq!(restored.content, original);
-        fs::remove_dir_all(&vault).ok();
-    }
-
-    #[test]
     fn rename_rejects_an_empty_title() {
         let vault = temp_vault_with_demo("rename-empty");
         let created = create_schedule(&vault, "demo", "plan", "").unwrap();
         let path = PathBuf::from(&created.path);
         assert!(rename_schedule(&vault, &path, "   ").is_err());
         assert!(path.exists());
-        fs::remove_dir_all(&vault).ok();
-    }
-
-    #[test]
-    fn snapshot_round_trips() {
-        let vault = temp_vault_with_demo("snapshot");
-        let created = create_schedule(&vault, "demo", "plan", "").unwrap();
-        let path = PathBuf::from(&created.path);
-        let original = read_schedule(&path).unwrap().content;
-
-        assert!(!has_snapshot(&vault, &path));
-        save_snapshot(&vault, &path).unwrap();
-        assert!(has_snapshot(&vault, &path));
-
-        let edited = original.replace("## Items\n", "## Items\n\n- [note] I-001 2026-07-21 x\n");
-        write_schedule(&path, &edited, 0).unwrap();
-        assert_ne!(read_schedule(&path).unwrap().content, original);
-
-        let restored = restore_snapshot(&vault, &path).unwrap();
-        assert_eq!(restored.content, original);
-        // One generation only: the snapshot is consumed by the restore.
-        assert!(!has_snapshot(&vault, &path));
-        assert!(restore_snapshot(&vault, &path).is_err());
         fs::remove_dir_all(&vault).ok();
     }
 
@@ -521,7 +465,14 @@ created: 2026-07-24\nupdated: 2026-07-24\n---\n\n## Non-working\n\n- weekly: sat
         fs::create_dir_all(vault.join("projects").join("_wip")).unwrap();
         fs::write(vault.join("projects").join("_index.md"), "x").unwrap();
 
-        assert_eq!(list_projects(&vault).unwrap(), vec!["alpha", "beta"]);
+        assert_eq!(
+            list_projects(&vault, false)
+                .unwrap()
+                .iter()
+                .map(|p| p.slug.clone())
+                .collect::<Vec<_>>(),
+            vec!["alpha", "beta"]
+        );
         assert!(list_schedules(&vault, None).unwrap().is_empty());
         fs::remove_dir_all(&vault).ok();
     }
@@ -551,7 +502,14 @@ created: 2026-07-24\nupdated: 2026-07-24\n---\n\n## Non-working\n\n- weekly: sat
             .exists());
         // The new project shows up in the picker under its stripped slug —
         // the number is a folder-name detail, not part of the identity.
-        assert_eq!(list_projects(&vault).unwrap(), vec!["demo"]);
+        assert_eq!(
+            list_projects(&vault, false)
+                .unwrap()
+                .iter()
+                .map(|p| p.slug.clone())
+                .collect::<Vec<_>>(),
+            vec!["demo"]
+        );
         fs::remove_dir_all(&vault).ok();
     }
 
@@ -601,7 +559,7 @@ created: 2026-07-24\nupdated: 2026-07-24\n---\n\n## Non-working\n\n- weekly: sat
             );
         }
         // Nothing was created on disk.
-        assert!(list_projects(&vault).unwrap().is_empty());
+        assert!(list_projects(&vault, false).unwrap().is_empty());
         fs::remove_dir_all(&vault).ok();
     }
 

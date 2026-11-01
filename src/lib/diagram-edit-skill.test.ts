@@ -1,22 +1,22 @@
 /**
- * Guards the unified AI-edit skill (T-0685).
+ * Guards the bundled AI-edit skill (T-1001, T-1018).
  *
  * One `diagram-edit` skill edits every kind of diagram: it reads the note's
  * `type` and follows that kind's rule file, so the formats live in the rules
- * and not in the skill. "A fourth kind works with the same skill" is only true
- * while the skill still points at a rule for each kind, the rules still exist,
- * and the two retired per-kind skills are not left behind to compete with it.
+ * and not in the skill. The skill and its rules ship inside the binary
+ * (`src-tauri/resources/`); this test pins that layout and the cross-links
+ * between them.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DIAGRAM_KINDS } from "@/lib/diagram-kinds";
 
 const root = process.cwd();
-const skillPath = join(root, "plugins", "workhub", "skills", "diagram-edit", "SKILL.md");
+const skillPath = join(root, "src-tauri", "resources", "skills", "diagram-edit", "SKILL.md");
 const skill = readFileSync(skillPath, "utf8").replace(/\r\n/g, "\n");
-const rulesDir = join(root, "vault-template", ".claude", "rules");
+const rulesDir = join(root, "src-tauri", "resources", "skill-rules");
 
 /** The rule file each kind is documented in. */
 const RULE_OF: Record<(typeof DIAGRAM_KINDS)[number], string> = {
@@ -58,13 +58,14 @@ describe("diagram-edit skill", () => {
     expect(skill).toMatch(/Do not invent an id prefix/);
   });
 
-  it("replaces the per-kind skills, which are gone", () => {
-    for (const old of ["schedule-edit", "mindmap-edit"]) {
-      expect(existsSync(join(root, "plugins", "workhub", "skills", old))).toBe(false);
+  it("ships no per-kind skills beside it", () => {
+    const dir = join(root, "src-tauri", "resources", "skills", "diagram-edit");
+    for (const entry of readdirSync(dir)) {
+      expect(entry).not.toMatch(/schedule-edit|mindmap-edit/);
     }
   });
 
-  it("leaves no reference to the retired skills in the vault rules", () => {
+  it("leaves no reference to the retired skills in the bundled rules", () => {
     for (const rule of new Set(Object.values(RULE_OF))) {
       const text = readFileSync(join(rulesDir, rule), "utf8");
       expect(text).not.toMatch(/schedule-edit|mindmap-edit/);

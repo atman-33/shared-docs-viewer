@@ -1,48 +1,21 @@
 mod actions;
 mod b64;
-mod caret;
-mod clips;
 mod commands;
 mod diag;
 mod diagram;
 mod diagram_edit;
 mod docs;
 mod docs_viewer;
-mod git;
-mod harness;
-mod herdr;
-mod inbox;
-mod ink;
-mod ink_preview;
 mod mindmap;
 mod models;
-mod music;
-mod notices;
-mod paste;
-mod persona;
 mod plantuml;
-mod plugins;
-mod quick_capture;
-mod rawkey;
 mod schedule;
 mod storage;
-mod stt;
-mod task_editor;
 mod tasks;
-mod terminal;
-mod tidy;
 mod update;
 mod vault_note;
 mod vault_project;
-mod vault_settings;
-mod voice;
-mod voice_chunk;
-mod voice_history;
-mod voice_loopback;
-mod voice_meeting;
-mod voice_struct;
 mod window_place;
-mod wsl;
 
 use tauri::Manager;
 
@@ -138,10 +111,6 @@ pub fn run() {
     // this runs every diagnostic (a panic included) is written nowhere.
     diag::init();
     update::cleanup_old();
-    // Must run before the first `storage::load()` call below (or anywhere
-    // else) so config reads see the migrated `~/.workhub` copy, not a fresh
-    // default (T-0064) — the startup snapshot right after it included.
-    storage::migrate_from_appdata();
     // As early as the migration allows: a report about a gesture that "does
     // nothing" is unreadable without knowing whether the feature was even
     // switched on. Recorded here rather than in `setup` so a startup that
@@ -149,9 +118,7 @@ pub fn run() {
     log_startup_settings(&storage::load());
     tauri::Builder::default()
         // Must be registered first (per tauri-plugin-single-instance docs).
-        // Without this, every launch adds another process; combined with the
-        // hidden quick-capture/voice windows keeping each one alive after its
-        // main window closes, instances used to accumulate indefinitely.
+        // Without this, every launch adds another process.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -170,19 +137,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         // No global-shortcut plugin (T-1001): the viewer registers no
-        // hotkeys, so it can run beside workhub without stealing its
-        // quick-capture, voice or clips gestures.
-        .manage(quick_capture::QuickCaptureState::default())
-        .manage(clips::ClipsState::default())
-        .manage(tasks::WatcherState::default())
-        .manage(ink::InkState::default())
-        .manage(terminal::TerminalState::default())
-        .manage(voice::VoiceState::default())
-        .manage(voice_meeting::MeetingState::default())
-        .manage(voice_struct::StructState::default())
-        .manage(stt::SttState::default())
-        .manage(tidy::TidyState::default())
-        .manage(diagram_edit::DiagramEditState::default())
+        // hotkeys, so it can run beside other apps without stealing
+        // their gestures.
         .manage(docs_viewer::DocsViewerState::default())
         .setup(|app| {
             // There is no tray icon, so a windowless process is unreachable —
@@ -197,10 +153,9 @@ pub fn run() {
                     }
                 });
             }
-            // Resume watching the configured vault (if any) across restarts.
             let cfg = storage::load();
             // Re-assert the start-with-Windows registration against the exe
-            // that is actually running. workhub ships as a portable exe and
+            // that is actually running. The viewer ships as a portable exe and
             // self-updates in place, so the registered path goes stale the
             // moment the user moves the folder; rewriting it on every start
             // is cheaper than detecting that.
@@ -213,108 +168,28 @@ pub fn run() {
                 std::thread::sleep(REVEAL_FALLBACK);
                 reveal_main_window(&fallback_handle);
             });
-            // Give a vault that has no `.workhub/settings.json` yet the
-            // values this machine is already using, so the split never
-            // starts by losing settings (T-0206).
-            vault_settings::seed_if_missing(&cfg);
             // The viewer builds no helper windows and runs no background
-            // agents (T-1001): no quick-capture, voice indicator, clips
-            // popup, task editor, ink preview, tidy or meeting structuring.
-            // What stays is the vault watcher below (a no-op without a
-            // vault) and the docs viewer windows created on demand.
-            if let Some(vault_path) = cfg.settings.vault_path {
-                let path = std::path::PathBuf::from(&vault_path);
-                if path.is_dir() {
-                    let state = app.state::<tasks::WatcherState>();
-                    let _ = tasks::start_watcher(app.handle().clone(), &state.0, path);
-                }
-            }
+            // agents: docs viewer windows are created on demand.
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_config,
             commands::save_config,
-            commands::tidy_status,
-            commands::run_vault_tidy_now,
-            commands::resume_tidy_session,
-            commands::list_inbox_notes,
-            commands::read_inbox_note,
-            commands::check_vault_path,
-            commands::vault_initialized,
-            commands::git_status,
-            commands::list_branches,
-            commands::git_op,
-            commands::git_log,
-            commands::git_log_cancel,
-            commands::git_default_log_refs,
-            commands::git_graph_op,
-            commands::git_commit_files,
-            commands::git_commit_file_diff,
-            commands::git_remote_url,
-            commands::list_worktrees,
-            commands::remove_worktree,
-            commands::delete_worktree_branch,
-            commands::open_in_vscode,
-            commands::open_terminal,
-            commands::launch_agent,
-            commands::copy_task_prompt,
-            commands::send_task_to_claude_desktop,
-            commands::opencode_models,
             commands::open_explorer,
-            commands::open_in_obsidian,
-            commands::open_backlog_item,
             commands::app_version,
-            commands::ink_capture_dir,
-            commands::ink_overlay_ready,
-            commands::ink_overlay_ack,
-            commands::save_ink_capture,
-            commands::save_ink_crop,
-            commands::list_ink_captures,
-            commands::read_ink_capture,
-            commands::copy_ink_capture,
-            commands::copy_ink_png,
-            commands::delete_ink_capture,
-            commands::open_ink_preview,
-            commands::ink_preview_hide,
-            commands::open_task_editor,
-            commands::task_editor_hide,
-            commands::task_editor_request_terminal_panel,
-            commands::focus_main_window,
             commands::reveal_main_window,
-            commands::input_listener_diagnostics,
             commands::diagnostic_log,
             commands::diagnostic_log_info,
             commands::log_frontend_error,
-            commands::restart_input_listener,
             commands::check_update,
             commands::apply_update,
             commands::restart_app,
-            commands::memory_setup_ok,
             commands::list_tasks,
-            commands::create_task,
-            commands::notices,
             commands::update_task,
-            commands::delete_task,
-            commands::init_vault,
-            commands::check_vault_template,
-            commands::apply_vault_template,
-            commands::remove_template_orphans,
-            commands::retain_template_orphans,
-            commands::apply_safe_template_updates,
-            commands::preview_vault_template_file,
-            commands::watch_vault,
-            commands::list_schedule_projects,
-            commands::resolve_project_dir,
             commands::create_vault_project,
             commands::next_project_folder,
+            commands::resolve_project_dir,
             commands::list_vault_projects,
-            commands::list_backlog_items,
-            commands::create_backlog_item,
-            commands::archive_vault_project,
-            commands::restore_vault_project,
-            commands::set_vault_project_repos,
-            commands::set_vault_project_details,
-            commands::set_vault_project_alias,
             commands::set_vault_project_order,
             commands::list_schedules,
             commands::read_schedule,
@@ -323,11 +198,7 @@ pub fn run() {
             commands::rename_schedule,
             commands::delete_schedule,
             commands::export_schedule_html,
-            commands::run_diagram_edit,
             commands::copy_diagram_edit_prompt,
-            commands::diagram_edit_status,
-            commands::has_snapshot,
-            commands::restore_diagram_snapshot,
             commands::docs_create_diagram,
             commands::docs_rename_diagram,
             commands::docs_delete_diagram,
@@ -355,12 +226,8 @@ pub fn run() {
             commands::docs_render_plantuml,
             commands::open_docs_viewer,
             commands::docs_viewer_payload,
-            commands::list_diagrams,
-            commands::create_diagram,
             commands::read_diagram,
             commands::write_diagram,
-            commands::rename_diagram,
-            commands::delete_diagram,
             commands::export_diagram_file,
             commands::export_diagram_png,
             commands::list_mindmaps,
@@ -371,54 +238,6 @@ pub fn run() {
             commands::delete_mindmap,
             commands::export_mindmap_file,
             commands::export_mindmap_png,
-            commands::launch_agent_for_task,
-            commands::load_music_data,
-            commands::save_music_data,
-            commands::export_playlist_file,
-            commands::import_playlist_file,
-            commands::fetch_youtube_title,
-            commands::terminal_open,
-            commands::terminal_write,
-            commands::terminal_resize,
-            commands::terminal_close,
-            commands::quick_capture_hide,
-            commands::clips_list,
-            commands::clips_save,
-            commands::clips_paste,
-            commands::clips_hide,
-            commands::stt_model_status,
-            commands::stt_download_model,
-            commands::stt_delete_model,
-            commands::voice_stop_recording,
-            commands::voice_cancel_recording,
-            commands::voice_capture_status,
-            commands::voice_history_list,
-            commands::voice_history_delete,
-            commands::voice_history_clear,
-            commands::voice_meeting_start,
-            commands::voice_meeting_finish,
-            commands::voice_meeting_status,
-            commands::voice_meeting_list,
-            commands::voice_meeting_read,
-            commands::voice_meeting_delete,
-            commands::voice_meeting_prompt,
-            commands::voice_struct_status,
-            commands::voice_struct_run_now,
-            commands::voice_meeting_minutes,
-            commands::voice_struct_log,
-            commands::voice_struct_repro,
-            commands::persona_characters,
-            commands::persona_genshijin_installed,
-            commands::persona_state,
-            commands::set_persona_state,
-            commands::delete_persona_character,
-            commands::plugins_state,
-            commands::plugin_details,
-            commands::set_plugin_enabled,
-            commands::plugins_update_marketplace,
-            commands::plugins_add_marketplace,
-            commands::plugins_update_plugin,
-            commands::plugins_install_plugin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
