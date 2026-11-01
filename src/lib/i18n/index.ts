@@ -35,9 +35,9 @@ export function isLocale(value: unknown): value is Locale {
   return value === "en" || value === "ja";
 }
 
-/** A stored value as a usable locale; anything unknown reads as English. */
+/** A stored value as a usable locale; anything unknown reads as Japanese. */
 export function toLocale(value: unknown): Locale {
-  return isLocale(value) ? value : "en";
+  return isLocale(value) ? value : "ja";
 }
 
 export type TranslateVars = Record<string, string | number>;
@@ -62,7 +62,7 @@ interface LocaleState {
 }
 
 export const useLocaleStore = create<LocaleState>((set) => ({
-  locale: "en",
+  locale: "ja",
   setLocale: (locale) => {
     if (typeof document !== "undefined") document.documentElement.lang = locale;
     set({ locale });
@@ -78,12 +78,12 @@ export function applyLocale(value: unknown): void {
 }
 
 /** Reads the configured locale and applies it; for window entry points. A
- * config that cannot be read leaves the window in English. */
+ * config that cannot be read leaves the window in Japanese. */
 export async function loadLocale(): Promise<void> {
   try {
     applyLocale((await api.getConfig()).settings.ui_locale);
   } catch {
-    // English is always a complete UI.
+    // Japanese is the default; a key it leaves out still falls back to English.
   }
 }
 

@@ -44,9 +44,9 @@ describe("toLocale", () => {
     expect(toLocale("en")).toBe("en");
   });
 
-  it("reads anything unknown as English", () => {
-    expect(toLocale("fr")).toBe("en");
-    expect(toLocale(undefined)).toBe("en");
-    expect(toLocale("")).toBe("en");
+  it("reads anything unknown as Japanese", () => {
+    expect(toLocale("fr")).toBe("ja");
+    expect(toLocale(undefined)).toBe("ja");
+    expect(toLocale("")).toBe("ja");
   });
 });
