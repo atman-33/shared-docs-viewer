@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   ancestorsWithin,
   baseName,
@@ -9,7 +9,14 @@ import {
   navigate,
   parentPath,
 } from "./tree-nav";
+import { useLocaleStore } from "@/lib/i18n";
 import type { DocsEntry } from "@/types";
+
+// Message assertions below are English: pin the locale so they do not follow
+// the app default.
+beforeEach(() => {
+  useLocaleStore.getState().setLocale("en");
+});
 
 function dir(name: string, parent: string): DocsEntry {
   return {
