@@ -501,7 +501,7 @@ fn default_clips_gesture() -> String {
     "ctrl-double".into()
 }
 fn default_task_language() -> String {
-    "en".into()
+    "ja".into()
 }
 fn default_claude_desktop_mode() -> String {
     "code".into()
@@ -513,7 +513,7 @@ fn default_diagram_list_sort() -> String {
     "updated".into()
 }
 fn default_ui_locale() -> String {
-    "en".into()
+    "ja".into()
 }
 fn default_meeting_struct_interval_secs() -> u64 {
     120

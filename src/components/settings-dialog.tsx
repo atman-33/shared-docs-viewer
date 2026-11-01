@@ -86,8 +86,8 @@ const DEFAULTS: Settings = {
   clips_enabled: true,
   clips_gesture: "ctrl-double",
   clips_rect: null,
-  language: "en",
-  ui_locale: "en",
+  language: "ja",
+  ui_locale: "ja",
   // Managed from the tab bar itself (right-click / drag), not from this dialog (T-0684).
   tab_order: [],
   hidden_tabs: [],
